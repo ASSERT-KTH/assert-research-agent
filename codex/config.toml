@@ -1,0 +1,21 @@
+# Plugin-less install: append to ~/.codex/config.toml (or <repo>/.codex/config.toml).
+# Assumes this repo is checked out (or symlinked) at ~/.codex/research-agent.
+# Skills: ln -s ~/.codex/research-agent/skills/* ~/.codex/skills/
+# Codex asks you to trust non-managed hooks once: run /hooks.
+
+[[hooks.SessionStart]]
+[[hooks.SessionStart.hooks]]
+type = "command"
+command = "python3 ~/.codex/research-agent/hooks/inject_discipline.py"
+
+[[hooks.PreToolUse]]
+matcher = "^Bash$"
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "python3 ~/.codex/research-agent/hooks/gate_run.py"
+statusMessage = "Checking pre-registration"
+
+[[hooks.Stop]]
+[[hooks.Stop.hooks]]
+type = "command"
+command = "python3 ~/.codex/research-agent/hooks/check_report.py"
