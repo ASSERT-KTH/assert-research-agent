@@ -57,8 +57,8 @@ In a research agent this is enforced, not just advised:
 Three layers, from always-on to on-demand to enforced:
 
 - 💬 **Prompt** — `system-prompt.md`, the discipline itself. Loaded into
-  every session by a `SessionStart` hook (plugins cannot replace the system
-  prompt, but can inject context). Shapes how the agent *reasons*.
+  every session by a `SessionStart` hook that reads `../system-prompt.md`
+  (harness configs cannot replace the system prompt, but can inject context). Shapes how the agent *reasons*.
 - 🧰 **Skills** — [`skills/`](skills/), one `SKILL.md` per procedure,
   loaded only when the task matches its description. Same format for Claude
   Code and Codex. Turn principles into steps and templates:
@@ -105,9 +105,7 @@ Skills then appear as `research-agent:preregister` etc.
 
 ### Codex
 
-`codex/` is a Codex plugin (`.codex-plugin/plugin.json`, skills,
-`hooks.json`). Without the plugin system, check out this repo at
-`~/.codex/research-agent`, then:
+Check out this repo at `~/.codex/research-agent`, then:
 
 ```sh
 cat ~/.codex/research-agent/codex/config.toml >> ~/.codex/config.toml
@@ -131,8 +129,8 @@ curl -o AGENTS.md https://raw.githubusercontent.com/ASSERT-KTH/agentic-scientifc
 system-prompt.md   the discipline (single source of truth)
 skills/            shared SKILL.md procedures
 hooks/             shared hook scripts
-claude/            Claude Code plugin  (symlinks to the above)
-codex/             Codex plugin + plain config.toml snippet
+claude/            Claude Code plugin (symlinks to skills/ and hooks/)
+codex/             Codex config.toml snippet (symlinks to skills/ and hooks/)
 ```
 
 ## The rule 📐
