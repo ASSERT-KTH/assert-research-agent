@@ -15,16 +15,21 @@ never run against ground truth is not evidence.
    single item, all-identical), a case where treatment == control so the
    delta must be 0.
 2. **Run the tool on it** and compare. Write the check as a test
-   (`tests/test_instrument_*.py` or equivalent) so it keeps running.
-3. **Check denomination first**: units, window, what the denominator counts.
+   (`tests/test_instrument_*.py` or equivalent) so it keeps running: one
+   known-positive, one known-negative, one boundary case (CONVENTIONS.md,
+   Results).
+3. **No clock.** An instrument reads the time anchor from `$OSAUDIT_NOW`,
+   never `now()` or a file time, so a rerun gives the same numbers
+   (`results/wall-clock`).
+4. **Check denomination first**: units, window, what the denominator counts.
    Prefer dimensionless ratios.
-4. **Check coverage**: print `considered / evaluated / succeeded`, and count
+5. **Check coverage**: print `considered / evaluated / succeeded`, and count
    what could not be evaluated. "Not measured" must be distinguishable from
    "measured zero" (an explicit `ok` flag, never a zero default).
-5. **Check tails**: print median and top1 (largest observation as share of
+6. **Check tails**: print median and top1 (largest observation as share of
    its bucket) beside every mean. Refuse a positive verdict carried by one
    observation.
-6. **Two measurements disagree?** Do not pick the one you prefer. Reconcile
+7. **Two measurements disagree?** Do not pick the one you prefer. Reconcile
    them or discard both; record which was wrong and why.
 
 ## Output

@@ -13,9 +13,9 @@ estimate effect sizes and generate hypotheses. That is its whole job.
 ## Steps
 
 1. **Reserve the holdout first.** Before the first look, write down which
-   data you will *not* touch (a split, a later range, a fresh sample). It is
-   the future confirmatory DATA RANGE. If no data is left, say so: findings
-   will stay exploratory until new data exists.
+   data you will *not* touch (a split, a later range, a fresh sample), as
+   paths in `holdout`. It is the future confirmatory `data`. If no data is
+   left, say so: findings will stay exploratory until new data exists.
 2. **Open the log** `explore/<yyyy-mm-dd>-<slug>.md` from the template
    below. Exploratory scripts live under `explore/` too; the run gate lets
    them run without a pre-registration once a log exists.
@@ -28,8 +28,13 @@ estimate effect sizes and generate hypotheses. That is its whole job.
    carries `EXPLORATORY`. Report effect sizes with intervals and the fork
    count; write "uncalibrated" next to any p-value or CI. Never print
    GO/STOP from an exploratory run.
-5. **Record what data was seen**, so the next pre-registration can prove
-   its range is disjoint.
+5. **Record what data was seen** in the front matter's `data_seen`, so the
+   next pre-registration can prove its range is disjoint (`osaudit` refuses
+   a confirmatory run whose input overlaps it). When a run produces a
+   results file, run it as
+   `osaudit run --explore explore/<file>.md --input <data> -o results/<name>.json -- <command>`:
+   the result records its mode, and its inputs' sha256 count as seen even
+   under another name.
 6. **Close with hypotheses**, each stated so it can be pre-registered: the
    claim, every fork turned into a fixed parameter, and the unseen data it
    would be tested on. Promote one with the `preregister` skill
@@ -37,13 +42,18 @@ estimate effect sizes and generate hypotheses. That is its whole job.
 
 ## Template
 
+The front matter is machine-readable (CONVENTIONS.md, Study); paths, not prose.
+
 ```markdown
++++
+mode = "exploratory"
+holdout = ["data/test"]          # reserved before the first look (or [] — findings stay exploratory)
+data_seen = ["data/train.csv"]   # every path looked at, kept current
++++
+
 # <slug>
 
-Mode: EXPLORATORY
 Why exploring: <question; or "confirmatory prereg/<file>.md came out <result>">
-Holdout reserved: <data not to be touched> (or: none left — findings stay exploratory)
-Data seen: <ranges / splits / samples looked at, kept up to date>
 
 ## Forks
 1. <date> chose <X> over <alternatives> because <what was seen>

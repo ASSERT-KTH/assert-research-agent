@@ -42,6 +42,11 @@ carries neither label.
   superseded value next to the correction: `~~1.92x~~ 4.4% (the 1.92x
   measured the wrong component)`.
 - Link the pre-registration file and the commit that produced the number.
+- Every number comes from a results file written by `osaudit run`; copy it,
+  never retype it. When `audit.toml` exists, the stop hook runs `osaudit
+  results` and `osaudit study`, and a finding sends you back. In the paper, a
+  number from exploratory results says "exploratory" in its paragraph
+  (`numbers/exploratory-unlabelled`).
 
 - A confirmatory null is the answer ("K = 0 under the registered
   procedure"). Looking further is a new, exploratory entry, never an

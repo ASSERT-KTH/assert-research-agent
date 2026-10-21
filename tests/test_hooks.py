@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -62,9 +63,57 @@ def prereg(repo: Path, name: str, text: str, commit: bool = True) -> None:
         commit_all(repo, f"prereg {name}")
 
 
+def valid(*experiments: str, extra: str = "") -> str:
+    """A machine-readable pre-registration (CONVENTIONS.md, Study) licensing experiments."""
+    return (
+        "+++\n"
+        'mode = "confirmatory"\nhypothesis = "h"\nnull = "h0"\n'
+        f"experiments = {json.dumps(list(experiments))}\n"
+        'data = ["data/test"]\nstatistic = "t"\nalpha = 0.05\nm = 1\ncorrection = "none"\n'
+        f'go = "g"\nstop = "s"\ndisaster = "d"\n{extra}'
+        "+++\n\n# body\n"
+    )
+
+
 def test_confirmatory_allowed_with_matching_committed_prereg(repo: Path) -> None:
-    prereg(repo, "a.md", "Mode: CONFIRMATORY\nProcedure: experiments/run.py @ abc\n")
+    prereg(repo, "a.md", valid("experiments/run.py"))
     assert gate(repo, "python experiments/run.py --seed 1") == {}
+
+
+@pytest.mark.parametrize(
+    "text, problem",
+    [
+        ("Procedure: experiments/run.py\n", "no TOML front matter"),
+        (valid("experiments/run.py").replace("alpha = 0.05", "alpha = 5"), "alpha"),
+        (valid("experiments/run.py").replace("m = 1", "m = 3"), 'correction "none" with m = 3'),
+        (valid("experiments/run.py").replace('data = ["data/test"]\n', ""), "data must be"),
+        (valid("experiments/run.py", extra='[[amendments]]\ndate = "d"\n'), "amendments"),
+    ],
+)
+def test_confirmatory_denied_with_invalid_front_matter(repo: Path, text: str, problem: str) -> None:
+    prereg(repo, "a.md", text)
+    out = gate(repo, "python experiments/run.py")
+    assert denied(out) and problem in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_confirmatory_needs_osaudit_run_when_audit_toml(repo: Path) -> None:
+    (repo / "audit.toml").write_text('[paper]\ntex = ["p.tex"]\n')
+    prereg(repo, "a.md", valid("experiments/run.py"))
+    out = gate(repo, "python experiments/run.py")
+    assert denied(out) and "osaudit run --prereg prereg/a.md" in out["hookSpecificOutput"]["permissionDecisionReason"]
+    cmd = "osaudit run --prereg prereg/a.md --input data/test -o results/r.json -- python experiments/run.py"
+    assert gate(repo, cmd) == {}
+
+
+def test_study_dirs_from_audit_toml(repo: Path) -> None:
+    (repo / "audit.toml").write_text('[study]\nprereg = "registrations"\nexperiments = "exp"\n')
+    (repo / "registrations").mkdir()
+    (repo / "registrations" / "a.md").write_text(valid("exp/run.py"))
+    commit_all(repo, "prereg")
+    assert denied(gate(repo, "python exp/other.py"))
+    assert gate(repo, "osaudit run --prereg registrations/a.md -o results/r.json -- python exp/run.py") == {}
+    assert gate(repo, "python experiments/run.py") == {}  # not an experiment directory here
+    assert denied(gate(repo, "echo x >> registrations/a.md"))
 
 
 def test_confirmatory_denied_when_prereg_names_other_experiment(repo: Path) -> None:
@@ -79,7 +128,7 @@ def test_confirmatory_denied_when_matching_prereg_uncommitted(repo: Path) -> Non
 
 
 def test_confirmatory_experiment_directory(repo: Path) -> None:
-    prereg(repo, "a.md", "Procedure: experiments/abl/ (run.sh, every flag fixed)\n")
+    prereg(repo, "a.md", valid("experiments/abl/"))
     assert gate(repo, "bash experiments/abl/run.sh") == {}
     assert denied(gate(repo, "bash experiments/abl2/run.sh"))
 
@@ -96,7 +145,7 @@ def test_confirmatory_denied_with_dirty_matching_prereg(repo: Path) -> None:
 
 
 def test_confirmatory_dirty_unrelated_prereg_does_not_block(repo: Path) -> None:
-    prereg(repo, "a.md", "Procedure: experiments/run.py\n")
+    prereg(repo, "a.md", valid("experiments/run.py"))
     prereg(repo, "b.md", "Procedure: experiments/other.py (draft)\n", commit=False)
     assert gate(repo, "python experiments/run.py") == {}
 
@@ -251,3 +300,48 @@ def test_shell_write_from_subdirectory_denied(repo: Path) -> None:
     (repo / "sub").mkdir()
     out = run_hook("gate_run.py", {"cwd": str(repo / "sub"), "tool_input": {"command": "echo x >> ../prereg/a.md"}})
     assert denied(out)
+
+
+def fake_osaudit(tmp_path: Path, exit_code: int, output: str) -> dict[str, str]:
+    """An `osaudit` on PATH that prints output and exits with exit_code, for the Stop hook."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    exe = bin_dir / "osaudit"
+    exe.write_text(f"#!/bin/sh\necho '{output}'\nexit {exit_code}\n")
+    exe.chmod(0o755)
+    return {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}"}
+
+
+def stop_with(repo: Path, env: dict[str, str]) -> dict:
+    out = subprocess.run(
+        [sys.executable, str(HOOKS / "check_report.py")],
+        input=json.dumps({"cwd": str(repo)}), capture_output=True, text=True, check=True, env=env,
+    )
+    return json.loads(out.stdout) if out.stdout.strip() else {}
+
+
+def labelled_results(repo: Path) -> None:
+    (repo / "audit.toml").write_text('[paper]\ntex = ["p.tex"]\n')
+    commit_all(repo, "audit")
+    (repo / "results").mkdir()
+    (repo / "results" / "r.json").write_text("{}")
+    (repo / "REPORT.md").write_text("## a — CONFIRMATORY\n")
+
+
+def test_stop_reports_osaudit_findings(repo: Path, tmp_path_factory: pytest.TempPathFactory) -> None:
+    labelled_results(repo)
+    env = fake_osaudit(tmp_path_factory.mktemp("o"), 1, "results/r.json:1: study/data-reused: x")
+    out = stop_with(repo, env)
+    assert out["decision"] == "block" and "study/data-reused" in out["reason"]
+
+
+def test_stop_silent_when_osaudit_clean(repo: Path, tmp_path_factory: pytest.TempPathFactory) -> None:
+    labelled_results(repo)
+    assert stop_with(repo, fake_osaudit(tmp_path_factory.mktemp("o"), 0, "")) == {}
+
+
+def test_stop_skips_osaudit_without_audit_toml(repo: Path, tmp_path_factory: pytest.TempPathFactory) -> None:
+    (repo / "results").mkdir()
+    (repo / "results" / "r.json").write_text("{}")
+    (repo / "REPORT.md").write_text("## a — EXPLORATORY\n")
+    assert stop_with(repo, fake_osaudit(tmp_path_factory.mktemp("o"), 1, "finding")) == {}

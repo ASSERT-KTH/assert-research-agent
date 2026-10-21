@@ -174,6 +174,11 @@ find bugs, and generate hypotheses. **It can never confirm.**
   only by writing a new pre-registration, fixing every fork the
   exploration chose as a parameter, and running it on unseen data. Running
   the same analysis on the same data again confirms nothing.
+- **Make the mode checkable.** The formats are in CONVENTIONS.md: a
+  pre-registration and an exploration log carry TOML front matter, and
+  every results file is written by `osaudit run --prereg` or `--explore`,
+  which records the mode. Then `osaudit study` can prove a confirmatory
+  claim later from the repository alone, without trusting you.
 - **Never mix the two in one sentence.** "Significant (p = .01)" next to
   a confirmatory verdict, when the p came from an exploratory fork,
   launders it.

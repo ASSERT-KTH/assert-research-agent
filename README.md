@@ -47,8 +47,10 @@ means *after* seeing it, you are not measuring, you are negotiating.
 
 In a research agent this is enforced, not just advised:
 
-- the `preregister` skill writes `prereg/<date>-<slug>.md` from a template;
-- a hook **refuses to run an experiment** until a committed
+- the `preregister` skill writes `prereg/<date>-<slug>.md`, with a TOML
+  front matter (hypothesis, data, α, m, correction, GO/STOP/DISASTER) that
+  tools can read;
+- a hook **refuses to run an experiment** until a committed, valid
   pre-registration names it (git history is the timestamp proving it came
   first);
 - a hook **asks the human** (Claude Code) or **refuses** (Codex, whose hooks
@@ -86,6 +88,37 @@ How the infrastructure supports both:
   only once a fork log `explore/<date>-<slug>.md` exists (`explore` skill).
 - Every report entry is labelled `CONFIRMATORY` or `EXPLORATORY`; the stop
   hook sends the agent back if new results come with an unlabelled entry.
+- Every results file is written by `osaudit run --prereg` or `--explore`,
+  which records the mode in its provenance (see below).
+
+## Specification and audit: CONVENTIONS.md and osaudit 📜
+
+[`CONVENTIONS.md`](CONVENTIONS.md) is the single specification of a
+research repository, from the first pre-registration to the paper: layout
+and `audit.toml [study]`, pre-registration and exploration-log formats, the
+results `provenance` block, and the rules on numbers, quotes and references.
+It lives here because this is where the process starts.
+
+Two tools enforce it at two moments:
+
+- 🤖 **during** the work, the research agent (this repo) refuses actions:
+  an unregistered run, an exploratory run without a log, an edit of a
+  committed pre-registration;
+- 🔎 **afterwards**, [osaudit](https://github.com/ASSERT-KTH/osaudit) checks
+  the repository alone, without trusting whoever did the work:
+  - `osaudit run --prereg FILE` refuses a confirmatory run that would not
+    pass the audit, then records `mode` and `study` in the result;
+  - `osaudit study` proves every confirmatory result was pre-registered
+    (`study/not-preregistered`), on registered experiments and data
+    (`study/prereg-mismatch`), not amended without a record or after the
+    data was seen (`study/amended`), and on data no exploration touched,
+    by path or by sha256 (`study/data-reused`);
+  - `osaudit numbers` flags a paper number traced to exploratory results
+    whose paragraph does not say so (`numbers/exploratory-unlabelled`).
+
+When the experimental repository has an `audit.toml`, the hooks require
+confirmatory runs to go through `osaudit run --prereg`, and the stop hook
+runs `osaudit results` and `osaudit study` (when installed) on new results.
 
 ## How a research agent is built 🧱
 
@@ -107,9 +140,9 @@ Three layers, from always-on to on-demand to enforced:
   check the repo. Same JSON protocol on both harnesses. Silent unless
   something is wrong.
   - `inject_discipline.py` (`SessionStart`) — injects `system-prompt.md`
-  - `gate_run.py` (`PreToolUse` Bash) — denies a confirmatory run unless a committed pre-registration names that experiment, an exploratory run without a fork log, and any shell command writing a committed pre-registration (redirection, `tee`, `sed -i`, `mv`/`cp`/`rm`, `git checkout`/`restore`…; best effort, an interpreter writing the file is not caught)
+  - `gate_run.py` (`PreToolUse` Bash) — denies a confirmatory run unless a committed pre-registration with valid front matter names that experiment (and, with `audit.toml`, unless it goes through `osaudit run --prereg`), an exploratory run without a fork log, and any shell command writing a committed pre-registration (redirection, `tee`, `sed -i`, `mv`/`cp`/`rm`, `git checkout`/`restore`…; best effort, an interpreter writing the file is not caught)
   - `guard_prereg.py` (`PreToolUse` Edit/Write on Claude, `apply_patch` on Codex) — asks (Claude) or denies (Codex) before a committed pre-registration changes
-  - `check_report.py` (`Stop`) — sends the agent back once if `results/` changed but no report was written, or the new entry is not labelled CONFIRMATORY/EXPLORATORY
+  - `check_report.py` (`Stop`) — sends the agent back once if `results/` changed but no report was written, the new entry is not labelled CONFIRMATORY/EXPLORATORY, or `osaudit results`/`study` report findings
 
 Rule of thumb: if the model *should* know it → prompt; if it is a
 procedure with a template → skill; if forgetting it silently corrupts a
@@ -117,20 +150,23 @@ result → hook.
 
 ## Repo conventions 📁
 
-The hooks assume this layout in the experimental repository (override with
-environment variables):
+The hooks assume this layout in the experimental repository (normative
+version: [`CONVENTIONS.md`](CONVENTIONS.md)). Override the directories in
+`audit.toml [study]` (shared with osaudit) or with environment variables,
+which take precedence:
 
-- `experiments/` — confirmatory entry points; a shell command touching a
-  path here is a *confirmatory run* (`RESEARCH_RUN_PATTERN`, a regex);
+- `experiments/` — confirmatory entry points (`[study] experiments`,
+  `RESEARCH_EXPERIMENTS_DIR`); a shell command touching a path here is a
+  *confirmatory run* (`RESEARCH_RUN_PATTERN`, a regex);
   `experiments/<name>` (first component, a script or a directory) is the
   experiment it runs, and a committed pre-registration must contain that
   path (`RESEARCH_EXPERIMENT_PATTERN`, a regex whose group 1 is the path)
-- `prereg/` — pre-registrations, one `.md` per question (`RESEARCH_PREREG_DIR`)
+- `prereg/` — pre-registrations, one `.md` per question (`[study] prereg`, `RESEARCH_PREREG_DIR`)
 - `explore/` — exploratory scripts and their fork logs; a shell command
   touching a path here is an *exploratory run* (`RESEARCH_EXPLORE_PATTERN`,
-  a regex; logs in `RESEARCH_EXPLORE_DIR`)
-- `results/` — raw outputs (`RESEARCH_RESULTS_DIR`)
-- `REPORT.md` — the written record (`RESEARCH_REPORT_FILES`, comma-separated)
+  a regex; logs in `[study] explore`, `RESEARCH_EXPLORE_DIR`)
+- `results/` — results JSON with provenance (`[study] results`, `RESEARCH_RESULTS_DIR`)
+- `REPORT.md` — the written record (`[study] report`, `RESEARCH_REPORT_FILES`, comma-separated)
 
 ## Install ⚙️
 
@@ -169,6 +205,7 @@ curl -o AGENTS.md https://raw.githubusercontent.com/ASSERT-KTH/agentic-scientifc
 
 ```
 system-prompt.md   the discipline (single source of truth)
+CONVENTIONS.md     the specification of a research repository (shared with osaudit)
 skills/            shared SKILL.md procedures
 hooks/             shared hook scripts
 tests/             hook tests (pytest tests/)
