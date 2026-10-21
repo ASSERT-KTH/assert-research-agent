@@ -21,6 +21,10 @@ PREREG_DIR = os.environ.get("RESEARCH_PREREG_DIR", "prereg")
 RESULTS_DIR = os.environ.get("RESEARCH_RESULTS_DIR", "results")
 REPORT_FILES = os.environ.get("RESEARCH_REPORT_FILES", "REPORT.md,NOTES.md,README.md").split(",")
 RUN_PATTERN = re.compile(os.environ.get("RESEARCH_RUN_PATTERN", r"(^|[\s/])experiments/\S+"))
+# Group 1 names the experiment a run belongs to; its pre-registration must name it too.
+EXPERIMENT_PATTERN = re.compile(
+    os.environ.get("RESEARCH_EXPERIMENT_PATTERN", r"""(?:^|[\s/])(experiments/[^\s/'";|&)]+)""")
+)
 EXPLORE_DIR = os.environ.get("RESEARCH_EXPLORE_DIR", "explore")
 EXPLORE_PATTERN = re.compile(os.environ.get("RESEARCH_EXPLORE_PATTERN", r"(^|[\s/])explore/\S+"))
 MODE_LABELS = ("CONFIRMATORY", "EXPLORATORY")
@@ -54,6 +58,11 @@ def changed_paths(cwd: str) -> list[str]:
 def repo_root(cwd: str) -> Path:
     """Top of the git work tree, or cwd outside a repo."""
     return Path(git(cwd, "rev-parse", "--show-toplevel").strip() or cwd)
+
+
+def patch_paths(patch: str) -> list[str]:
+    """Files touched by a Codex apply_patch payload (Add/Update/Delete File, Move to)."""
+    return re.findall(r"^\*\*\* (?:Add File|Update File|Delete File|Move to): (.+?)\s*$", patch, re.M)
 
 
 def added_text(cwd: str, path: str) -> str:

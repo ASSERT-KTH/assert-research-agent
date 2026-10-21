@@ -55,19 +55,50 @@ def test_confirmatory_denied_without_prereg(repo: Path) -> None:
     assert "explore skill" in out["hookSpecificOutput"]["permissionDecisionReason"]
 
 
-def test_confirmatory_allowed_with_committed_prereg(repo: Path) -> None:
-    (repo / "prereg").mkdir()
-    (repo / "prereg" / "a.md").write_text("Mode: CONFIRMATORY\n")
-    commit_all(repo, "prereg")
-    assert gate(repo, "python experiments/run.py") == {}
+def prereg(repo: Path, name: str, text: str, commit: bool = True) -> None:
+    (repo / "prereg").mkdir(exist_ok=True)
+    (repo / "prereg" / name).write_text(text)
+    if commit:
+        commit_all(repo, f"prereg {name}")
 
 
-def test_confirmatory_denied_with_dirty_prereg(repo: Path) -> None:
-    (repo / "prereg").mkdir()
-    (repo / "prereg" / "a.md").write_text("v1\n")
-    commit_all(repo, "prereg")
-    (repo / "prereg" / "a.md").write_text("v2\n")
+def test_confirmatory_allowed_with_matching_committed_prereg(repo: Path) -> None:
+    prereg(repo, "a.md", "Mode: CONFIRMATORY\nProcedure: experiments/run.py @ abc\n")
+    assert gate(repo, "python experiments/run.py --seed 1") == {}
+
+
+def test_confirmatory_denied_when_prereg_names_other_experiment(repo: Path) -> None:
+    prereg(repo, "a.md", "Procedure: experiments/other.py\n")
+    out = gate(repo, "python experiments/run.py")
+    assert denied(out) and "names experiments/run.py" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_confirmatory_denied_when_matching_prereg_uncommitted(repo: Path) -> None:
+    prereg(repo, "a.md", "Procedure: experiments/run.py\n", commit=False)
     assert denied(gate(repo, "python experiments/run.py"))
+
+
+def test_confirmatory_experiment_directory(repo: Path) -> None:
+    prereg(repo, "a.md", "Procedure: experiments/abl/ (run.sh, every flag fixed)\n")
+    assert gate(repo, "bash experiments/abl/run.sh") == {}
+    assert denied(gate(repo, "bash experiments/abl2/run.sh"))
+
+
+def test_confirmatory_every_experiment_in_command_needs_prereg(repo: Path) -> None:
+    prereg(repo, "a.md", "Procedure: experiments/a.py\n")
+    assert denied(gate(repo, "python experiments/a.py && python experiments/b.py"))
+
+
+def test_confirmatory_denied_with_dirty_matching_prereg(repo: Path) -> None:
+    prereg(repo, "a.md", "Procedure: experiments/run.py v1\n")
+    prereg(repo, "a.md", "Procedure: experiments/run.py v2\n", commit=False)
+    assert denied(gate(repo, "python experiments/run.py"))
+
+
+def test_confirmatory_dirty_unrelated_prereg_does_not_block(repo: Path) -> None:
+    prereg(repo, "a.md", "Procedure: experiments/run.py\n")
+    prereg(repo, "b.md", "Procedure: experiments/other.py (draft)\n", commit=False)
+    assert gate(repo, "python experiments/run.py") == {}
 
 
 def test_exploratory_denied_without_log(repo: Path) -> None:
@@ -133,3 +164,39 @@ def test_stop_hook_active_silent(repo: Path) -> None:
     (repo / "results").mkdir()
     (repo / "results" / "r.json").write_text("{}")
     assert stop(repo, active=True) == {}
+
+
+def guard(repo: Path, event: dict) -> dict:
+    return run_hook("guard_prereg.py", {"cwd": str(repo), **event})
+
+
+def decision(out: dict) -> str | None:
+    return out.get("hookSpecificOutput", {}).get("permissionDecision")
+
+
+def test_guard_claude_asks_on_committed_prereg(repo: Path) -> None:
+    prereg(repo, "a.md", "x\n")
+    out = guard(repo, {"tool_name": "Edit", "tool_input": {"file_path": str(repo / "prereg" / "a.md")}})
+    assert decision(out) == "ask"
+
+
+def test_guard_claude_silent_on_uncommitted_prereg_and_other_files(repo: Path) -> None:
+    prereg(repo, "a.md", "x\n", commit=False)
+    assert guard(repo, {"tool_name": "Write", "tool_input": {"file_path": str(repo / "prereg" / "a.md")}}) == {}
+    assert guard(repo, {"tool_name": "Edit", "tool_input": {"file_path": str(repo / "README.md")}}) == {}
+
+
+def apply_patch(*headers: str) -> dict:
+    body = "\n".join(f"*** {h}\n+x" for h in headers)
+    return {"tool_name": "apply_patch", "tool_input": {"command": f"*** Begin Patch\n{body}\n*** End Patch"}}
+
+
+def test_guard_codex_denies_committed_prereg_absolute_and_relative(repo: Path) -> None:
+    prereg(repo, "a.md", "x\n")
+    assert decision(guard(repo, apply_patch(f"Update File: {repo / 'prereg' / 'a.md'}"))) == "deny"
+    assert decision(guard(repo, apply_patch("Update File: README.md", "Delete File: prereg/a.md"))) == "deny"
+
+
+def test_guard_codex_silent_on_new_prereg_and_other_files(repo: Path) -> None:
+    assert guard(repo, apply_patch("Add File: prereg/new.md")) == {}
+    assert guard(repo, apply_patch("Update File: README.md")) == {}

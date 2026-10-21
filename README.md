@@ -48,11 +48,13 @@ means *after* seeing it, you are not measuring, you are negotiating.
 In a research agent this is enforced, not just advised:
 
 - the `preregister` skill writes `prereg/<date>-<slug>.md` from a template;
-- a hook **refuses to run an experiment** until a pre-registration is
-  committed (git history is the timestamp proving it came first);
-- a hook **asks the human** before a committed pre-registration is edited,
-  and the edit must record whether the data was seen yet, which way the bar
-  moved and on what evidence.
+- a hook **refuses to run an experiment** until a committed
+  pre-registration names it (git history is the timestamp proving it came
+  first);
+- a hook **asks the human** (Claude Code) or **refuses** (Codex, whose hooks
+  cannot ask) before a committed pre-registration is edited, and the edit
+  must record whether the data was seen yet, which way the bar moved and on
+  what evidence.
 
 ## Confirmatory vs exploratory 🔀
 
@@ -78,7 +80,8 @@ reserve the holdout before the first look.
 
 How the infrastructure supports both:
 
-- `experiments/` runs are confirmatory: gated on a committed `prereg/*.md`.
+- `experiments/<name>` runs are confirmatory: gated on a committed
+  `prereg/*.md` that names `experiments/<name>`.
 - `explore/` runs are exploratory: allowed without a pre-registration, but
   only once a fork log `explore/<date>-<slug>.md` exists (`explore` skill).
 - Every report entry is labelled `CONFIRMATORY` or `EXPLORATORY`; the stop
@@ -104,8 +107,8 @@ Three layers, from always-on to on-demand to enforced:
   check the repo. Same JSON protocol on both harnesses. Silent unless
   something is wrong.
   - `inject_discipline.py` (`SessionStart`) — injects `system-prompt.md`
-  - `gate_run.py` (`PreToolUse` Bash) — denies confirmatory runs without a committed pre-registration, and exploratory runs without a fork log
-  - `guard_prereg.py` (`PreToolUse` Edit/Write, Claude only for now) — asks before a committed pre-registration changes
+  - `gate_run.py` (`PreToolUse` Bash) — denies a confirmatory run unless a committed pre-registration names that experiment, and an exploratory run without a fork log
+  - `guard_prereg.py` (`PreToolUse` Edit/Write on Claude, `apply_patch` on Codex) — asks (Claude) or denies (Codex) before a committed pre-registration changes; shell edits (`echo >>`) are not guarded
   - `check_report.py` (`Stop`) — sends the agent back once if `results/` changed but no report was written, or the new entry is not labelled CONFIRMATORY/EXPLORATORY
 
 Rule of thumb: if the model *should* know it → prompt; if it is a
@@ -118,7 +121,10 @@ The hooks assume this layout in the experimental repository (override with
 environment variables):
 
 - `experiments/` — confirmatory entry points; a shell command touching a
-  path here is a *confirmatory run* (`RESEARCH_RUN_PATTERN`, a regex)
+  path here is a *confirmatory run* (`RESEARCH_RUN_PATTERN`, a regex);
+  `experiments/<name>` (first component, a script or a directory) is the
+  experiment it runs, and a committed pre-registration must contain that
+  path (`RESEARCH_EXPERIMENT_PATTERN`, a regex whose group 1 is the path)
 - `prereg/` — pre-registrations, one `.md` per question (`RESEARCH_PREREG_DIR`)
 - `explore/` — exploratory scripts and their fork logs; a shell command
   touching a path here is an *exploratory run* (`RESEARCH_EXPLORE_PATTERN`,

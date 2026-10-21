@@ -36,8 +36,10 @@ is seen. Anything else is exploratory (use the `explore` skill).
    prints `CONFIRMATORY` and `GO` / `STOP` / `DISASTER` / `UNJUDGED` from
    these thresholds.
 7. `git add prereg/… && git commit -m "prereg: <slug>"`. The run gate hook
-   refuses runs under `experiments/` until this commit exists; the commit
-   date is the proof the bar came before the data.
+   refuses to run `experiments/<name>` (a script, or a directory of them)
+   until a committed pre-registration names that exact path, normally on its
+   `Procedure:` line. One registration can name several experiments. The
+   commit date proves the bar came before the data.
 
 ## Amendments
 
@@ -57,7 +59,7 @@ Premise checked first: <sentence> — <how, result>
 
 Hypothesis:      <claim>; H0: <null>
 Data range:      <exactly which data>; unseen because <disjoint from explore/… / collected after this commit>
-Procedure:       <script path, commit, every parameter fixed>
+Procedure:       experiments/<name> @ <commit>, <every parameter fixed>
 Statistic, α:    <test statistic, sidedness>, α = <…>
 Tests (m):       <m> — <list>; correction: <Holm / none because m = 1>
 

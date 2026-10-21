@@ -15,6 +15,14 @@ type = "command"
 command = "python3 ~/.codex/research-agent/hooks/gate_run.py"
 statusMessage = "Checking pre-registration"
 
+# Codex cannot "ask" from a hook: edits to a committed pre-registration are denied.
+[[hooks.PreToolUse]]
+matcher = "^apply_patch$"
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "python3 ~/.codex/research-agent/hooks/guard_prereg.py"
+statusMessage = "Guarding pre-registrations"
+
 [[hooks.Stop]]
 [[hooks.Stop.hooks]]
 type = "command"
