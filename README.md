@@ -208,7 +208,7 @@ system-prompt.md   the discipline (single source of truth)
 CONVENTIONS.md     the specification of a research repository (shared with osaudit)
 skills/            shared SKILL.md procedures
 hooks/             shared hook scripts
-tests/             hook tests (pytest tests/)
+tests/             hook tests and CONVENTIONS.md examples checked against hooks and osaudit (pytest tests/; CI)
 claude/            Claude Code plugin (symlinks to skills/ and hooks/)
 codex/             Codex config.toml snippet (symlinks to skills/ and hooks/)
 ```
