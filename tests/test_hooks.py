@@ -63,10 +63,14 @@ def prereg(repo: Path, name: str, text: str, commit: bool = True) -> None:
         commit_all(repo, f"prereg {name}")
 
 
+LOG = '+++\nschema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/exploration-log-v1.json"\nmode = "exploratory"\nholdout = []\ndata_seen = []\n+++\n# look\n'
+
+
 def valid(*experiments: str, extra: str = "") -> str:
     """A machine-readable pre-registration (CONVENTIONS.md, Study) licensing experiments."""
     return (
         "+++\n"
+        'schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/prereg-v1.json"\n'
         'mode = "confirmatory"\nhypothesis = "h"\nnull = "h0"\n'
         f"experiments = {json.dumps(list(experiments))}\n"
         'data = ["data/test"]\nstatistic = "t"\nalpha = 0.05\nm = 1\ncorrection = "none"\n'
@@ -156,13 +160,13 @@ def test_exploratory_denied_without_log(repo: Path) -> None:
 
 def test_exploratory_allowed_with_uncommitted_log(repo: Path) -> None:
     (repo / "explore").mkdir()
-    (repo / "explore" / "2026-10-21-look.md").write_text("Mode: EXPLORATORY\n")
+    (repo / "explore" / "2026-10-21-look.md").write_text(LOG)
     assert gate(repo, "python explore/look.py") == {}
 
 
 def test_exploratory_needs_no_prereg_but_confirmatory_still_does(repo: Path) -> None:
     (repo / "explore").mkdir()
-    (repo / "explore" / "log.md").write_text("Mode: EXPLORATORY\n")
+    (repo / "explore" / "log.md").write_text(LOG)
     assert gate(repo, "python explore/look.py") == {}
     assert denied(gate(repo, "python experiments/run.py"))
 
@@ -345,3 +349,16 @@ def test_stop_skips_osaudit_without_audit_toml(repo: Path, tmp_path_factory: pyt
     (repo / "results" / "r.json").write_text("{}")
     (repo / "REPORT.md").write_text("## a — EXPLORATORY\n")
     assert stop_with(repo, fake_osaudit(tmp_path_factory.mktemp("o"), 1, "finding")) == {}
+
+
+def test_exploratory_denied_with_log_without_schema(repo: Path) -> None:
+    (repo / "explore").mkdir()
+    (repo / "explore" / "log.md").write_text(LOG.replace("schema", "schemaa"))
+    out = gate(repo, "python explore/look.py")
+    assert denied(out) and "schema must be" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_confirmatory_denied_without_schema(repo: Path) -> None:
+    prereg(repo, "a.md", "\n".join(l for l in valid("experiments/run.py").splitlines() if not l.startswith("schema")))
+    out = gate(repo, "python experiments/run.py")
+    assert denied(out) and "schema must be" in out["hookSpecificOutput"]["permissionDecisionReason"]

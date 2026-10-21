@@ -46,6 +46,7 @@ The front matter is machine-readable (CONVENTIONS.md, Study); paths, not prose.
 
 ```markdown
 +++
+schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/exploration-log-v1.json"   # mandatory, exactly this
 mode = "exploratory"
 holdout = ["data/test"]          # reserved before the first look (or [] — findings stay exploratory)
 data_seen = ["data/train.csv"]   # every path looked at, kept current

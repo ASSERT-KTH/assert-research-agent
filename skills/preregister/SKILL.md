@@ -67,10 +67,12 @@ matter and commit it:
 ## Template
 
 The front matter is the machine-readable part (CONVENTIONS.md, Study); every
-key is mandatory except `amendments`. The body is for humans.
+key is mandatory except `amendments`, and `schema` is exactly the URL shown
+([`schemas/prereg-v1.json`](../../schemas/prereg-v1.json)). The body is for humans.
 
 ```markdown
 +++
+schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/prereg-v1.json"   # mandatory, exactly this
 mode = "confirmatory"
 hypothesis = "<claim>"
 null = "<H0>"

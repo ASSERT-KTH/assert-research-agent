@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/exploration-log-v1.json",
+  "title": "Exploration log",
+  "description": "TOML front matter of an exploration log (explore/<yyyy-mm-dd>-<slug>.md); the body lists every fork as it is made. Specified in https://github.com/ASSERT-KTH/assert-research-agent/blob/main/CONVENTIONS.md.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/exploration-log-v1.json",
+      "description": "Mandatory: the URL of this schema, which leads back to the conventions."
+    },
+    "mode": {
+      "const": "exploratory"
+    },
+    "holdout": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Data reserved before the first look, for the confirmatory run."
+    },
+    "data_seen": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Every path looked at, kept current."
+    }
+  },
+  "required": [
+    "schema",
+    "mode",
+    "holdout",
+    "data_seen"
+  ]
+}

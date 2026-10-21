@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/provenance-v1.json",
+  "title": "Results provenance",
+  "description": "The provenance block of a results JSON file, written by `osaudit run`. Specified in https://github.com/ASSERT-KTH/assert-research-agent/blob/main/CONVENTIONS.md.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/provenance-v1.json",
+      "description": "Mandatory: the URL of this schema, which leads back to the conventions."
+    },
+    "command": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "cwd": {
+      "type": "string"
+    },
+    "inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "now": {
+      "type": "string",
+      "description": "Time anchor, ISO 8601 with time zone."
+    },
+    "mode": {
+      "enum": [
+        "confirmatory",
+        "exploratory"
+      ]
+    },
+    "study": {
+      "type": "string",
+      "minLength": 1,
+      "description": "With mode: the pre-registration or the exploration log."
+    },
+    "osaudit": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "command",
+    "inputs",
+    "commit",
+    "now"
+  ],
+  "dependentRequired": {
+    "study": [
+      "mode"
+    ],
+    "mode": [
+      "study"
+    ]
+  }
+}

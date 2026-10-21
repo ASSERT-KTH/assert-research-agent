@@ -23,7 +23,8 @@ results = "results"          # results JSON files (when [results] files is not d
 report = ["REPORT.md", "NOTES.md", "README.md"]   # the written record
 ```
 - The paper is LaTeX sources or a PDF. When both exist, the LaTeX sources are audited. *Prevents: auditing a stale PDF that no longer matches the sources.*
-- A Markdown document that states results (a findings file, a report) carries TOML front matter (`+++ ... +++`) with its structured data, and is declared in `[paper] md`; its numbers are then audited as a paper's. A Markdown file without front matter is not audited. *Prevents: results stated in Markdown, the usual form of a findings file, escaping the audit that a paper gets.*
+- A Markdown document that states results (a findings file, a report) carries TOML front matter (`+++ ... +++`) with its structured data, starting with `schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/document-v1.json"`, and is declared in `[paper] md`; its numbers are then audited as a paper's. A Markdown file without front matter is not audited. *Prevents: results stated in Markdown, the usual form of a findings file, escaping the audit that a paper gets.*
+- Every structured data file names its schema in a mandatory `schema` key: the URL of a versioned JSON Schema in [`schemas/`](schemas/) of this repository (`https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/<name>-v<n>.json`). A missing or unknown URL is a defect (`schema/missing`, `schema/unknown`; refused by `hook:gate_run`). The schemas: [`prereg-v1`](schemas/prereg-v1.json) (pre-registration front matter), [`exploration-log-v1`](schemas/exploration-log-v1.json), [`document-v1`](schemas/document-v1.json) (front matter of an audited Markdown document), [`provenance-v1`](schemas/provenance-v1.json) (results provenance, written by `osaudit run`). *Prevents: a data file whose format cannot be found, checked or evolved; whoever finds one is led back to these conventions.*
 - Every machine-readable file of the audit (configuration, derivations, ledgers) is TOML. *Prevents: two parsers, two sets of quoting rules, two ways to be wrong.*
 - An entry of `audit.toml` that matches nothing in the paper is a defect, and is reported. *Prevents: allow-lists and derivations that outlive the text they justified.*
 
@@ -39,6 +40,7 @@ Every result is **confirmatory** or **exploratory**. The difference is whether t
 
 ```toml
 +++
+schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/prereg-v1.json"
 mode = "confirmatory"
 hypothesis = "the treatment raises the pass rate"
 null = "the pass rate is unchanged"
@@ -72,6 +74,7 @@ why = "three more tests added to the family"
 
 ```toml
 +++
+schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/exploration-log-v1.json"
 mode = "exploratory"
 holdout = ["data/test"]          # reserved before the first look, for the confirmatory run
 data_seen = ["data/train.csv"]   # every path looked at, kept current
@@ -107,14 +110,15 @@ data_seen = ["data/train.csv"]   # every path looked at, kept current
 
 ```json
 "provenance": {
+  "schema": "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/provenance-v1.json",
   "command": ["python", "experiments/passrate.py", "data/test"],
   "cwd": ".",
-  "inputs": [{"path": "data/test", "sha256": "<64 hex>"}],
-  "commit": "<40 hex>",
+  "inputs": [{"path": "data/test", "sha256": "9f2c9f2c9f2c9f2c9f2c9f2c9f2c9f2c9f2c9f2c9f2c9f2c9f2c9f2c9f2c9f2c"}],
+  "commit": "3b1e7a0c3b1e7a0c3b1e7a0c3b1e7a0c3b1e7a0c",
   "now": "2026-10-21T10:00:00+00:00",
   "mode": "confirmatory",
   "study": "prereg/2026-10-21-passrate.md",
-  "osaudit": "0.2.0"
+  "osaudit": "0.4.0"
 }
 ```
 - Results are produced from committed instruments: the instruments (`[results] instruments` in `audit.toml`) are unchanged since the recorded commit (`results/stale`). A results file that depends on only some of them declares them in `[[results.depends]]` (`file`, `instruments`). *Prevents: results of a version of the code that no longer exists, without rerunning every instrument for every change.*

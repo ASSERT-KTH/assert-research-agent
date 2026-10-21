@@ -73,3 +73,54 @@ def test_study_table_example_matches_hook_defaults(tmp_path: Path) -> None:
     s = study(str(tmp_path))
     assert (s.prereg, s.explore, s.experiments, s.results) == ("prereg", "explore", "experiments", "results")
     assert s.report == ["REPORT.md", "NOTES.md", "README.md"]
+
+
+SCHEMA_DIR = ROOT / "schemas"
+BASE = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/"
+
+
+def jsonschema():  # type: ignore[no-untyped-def]
+    """The JSON Schema validator: mandatory in CI, skipped locally without it."""
+    if os.environ.get("CI"):
+        return importlib.import_module("jsonschema")
+    return pytest.importorskip("jsonschema")
+
+
+def schema(name: str) -> dict:
+    import json
+
+    return json.loads((SCHEMA_DIR / f"{name}.json").read_text())
+
+
+@pytest.mark.parametrize("path", sorted(SCHEMA_DIR.glob("*.json")), ids=lambda p: p.stem)
+def test_schema_points_to_itself(path: Path) -> None:
+    import json
+
+    s = json.loads(path.read_text())
+    url = BASE + path.name
+    assert s["$id"] == url and s["properties"]["schema"]["const"] == url and "schema" in s["required"]
+    jsonschema().Draft202012Validator.check_schema(s)
+
+
+@pytest.mark.parametrize("mode, name", [("confirmatory", "prereg-v1"), ("exploratory", "exploration-log-v1")])
+def test_front_matter_examples_validate(mode: str, name: str) -> None:
+    fm = tomllib.loads(example(mode).strip().strip("+").strip())
+    jsonschema().validate(fm, schema(name))
+    del fm["schema"]
+    with pytest.raises(jsonschema().ValidationError):  # mandatory
+        jsonschema().validate(fm, schema(name))
+
+
+def test_provenance_example_validates() -> None:
+    import json
+
+    block = re.search(r'```json\n("provenance": \{.*?\n\})\n```', CONVENTIONS, re.DOTALL)
+    assert block, "CONVENTIONS.md must show the provenance block"
+    jsonschema().validate(json.loads("{" + block.group(1) + "}")["provenance"], schema("provenance-v1"))
+
+
+def test_prereg_schema_and_hook_agree_on_m_without_correction() -> None:
+    fm = tomllib.loads(example("confirmatory").strip().strip("+").strip())
+    fm["correction"] = "none"
+    with pytest.raises(jsonschema().ValidationError):
+        jsonschema().validate(fm, schema("prereg-v1"))

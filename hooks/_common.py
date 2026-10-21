@@ -67,23 +67,44 @@ def study(cwd: str) -> Study:
     )
 
 
-# Pre-registration front matter (CONVENTIONS.md, Study). osaudit holds the same check.
+# Front matter formats (CONVENTIONS.md, Study; schemas/). osaudit holds the same checks.
 FRONT = re.compile(r"\A\+\+\+[ \t]*\n(.*?)\n\+\+\+[ \t]*(?:\n|\Z)", re.DOTALL)
+SCHEMAS = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/"
+PREREG_SCHEMA = SCHEMAS + "prereg-v1.json"
+LOG_SCHEMA = SCHEMAS + "exploration-log-v1.json"
 TEXT_FIELDS = ("hypothesis", "null", "statistic", "go", "stop", "disaster")
 LIST_FIELDS = ("experiments", "data")
 CORRECTIONS = ("holm", "bonferroni", "hochberg", "benjamini-hochberg", "none")
 
 
-def prereg_problems(text: str) -> list[str]:
-    """What makes text not a valid pre-registration; [] when valid."""
+def front_matter(text: str) -> tuple[dict | None, str]:
     m = FRONT.match(text)
     if not m:
-        return ["no TOML front matter (+++ ... +++ at the top)"]
+        return None, "no TOML front matter (+++ ... +++ at the top)"
     try:
-        fm = tomllib.loads(m.group(1))
+        return tomllib.loads(m.group(1)), ""
     except tomllib.TOMLDecodeError as e:
-        return [f"front matter: {e}"]
-    out = []
+        return None, f"front matter: {e}"
+
+
+def log_problems(text: str) -> list[str]:
+    """What makes text not a valid exploration log; [] when valid."""
+    fm, why = front_matter(text)
+    if fm is None:
+        return [why]
+    out = [] if fm.get("schema") == LOG_SCHEMA else [f'schema must be "{LOG_SCHEMA}"']
+    if fm.get("mode") != "exploratory":
+        out.append('mode must be "exploratory"')
+    out += [f"{k} must be a list of paths" for k in ("holdout", "data_seen") if not isinstance(fm.get(k), list)]
+    return out
+
+
+def prereg_problems(text: str) -> list[str]:
+    """What makes text not a valid pre-registration; [] when valid."""
+    fm, why = front_matter(text)
+    if fm is None:
+        return [why]
+    out = [] if fm.get("schema") == PREREG_SCHEMA else [f'schema must be "{PREREG_SCHEMA}"']
     if fm.get("mode") != "confirmatory":
         out.append('mode must be "confirmatory"')
     out += [f"{k} must be a non-empty string" for k in TEXT_FIELDS if not (isinstance(fm.get(k), str) and fm[k].strip())]

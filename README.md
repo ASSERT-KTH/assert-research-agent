@@ -97,6 +97,8 @@ How the infrastructure supports both:
 research repository, from the first pre-registration to the paper: layout
 and `audit.toml [study]`, pre-registration and exploration-log formats, the
 results `provenance` block, and the rules on numbers, quotes and references.
+Every structured data file carries a mandatory `schema` key, the URL of its
+JSON Schema in [`schemas/`](schemas/): whoever finds the file finds this repo.
 It lives here because this is where the process starts.
 
 Two tools enforce it at two moments:
@@ -206,6 +208,7 @@ curl -o AGENTS.md https://raw.githubusercontent.com/ASSERT-KTH/assert-research-a
 ```
 system-prompt.md   the discipline (single source of truth)
 CONVENTIONS.md     the specification of a research repository (shared with osaudit)
+schemas/           JSON Schemas of the structured data files; each file names its schema URL
 skills/            shared SKILL.md procedures
 hooks/             shared hook scripts
 tests/             hook tests and CONVENTIONS.md examples checked against hooks and osaudit (pytest tests/; CI)

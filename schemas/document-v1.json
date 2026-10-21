@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/document-v1.json",
+  "title": "Audited document",
+  "description": "TOML front matter of a Markdown document that states results (a findings file, a report); its numbers are audited by osaudit. Other keys are free structured data about the document. Specified in https://github.com/ASSERT-KTH/assert-research-agent/blob/main/CONVENTIONS.md.",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/document-v1.json",
+      "description": "Mandatory: the URL of this schema, which leads back to the conventions."
+    }
+  },
+  "required": [
+    "schema"
+  ]
+}

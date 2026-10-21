@@ -13,8 +13,9 @@ Directories come from `study(cwd)`: environment, else audit.toml [study] (CONVEN
   run pattern names no experiment, any committed pre-registration is accepted.
 - Exploratory run: a command matching the explore pattern (default: a path
   under explore/). Allowed without a pre-registration, but only once a fork
-  log (.md in the explore directory) exists, so data-dependent choices are
-  written down as they are made.
+  log (.md in the explore directory) with valid front matter (schema URL,
+  mode, holdout, data_seen) exists, so data-dependent choices are written
+  down as they are made.
 
 Any shell command that writes a committed pre-registration (redirection,
 tee, sed -i, mv/cp/rm, git checkout/restore…) is refused on both harnesses:
@@ -31,6 +32,7 @@ from _common import (
     committed_preregs,
     emit,
     git,
+    log_problems,
     prereg_problems,
     read_event,
     repo_root,
@@ -98,10 +100,17 @@ if written:
 elif s.run_pattern.search(cmd):
     reason = confirmatory_reason(cwd, s, cmd)
 elif s.explore_pattern.search(cmd):
-    if not list((repo_root(cwd) / s.explore).glob("*.md")):
+    logs = sorted((repo_root(cwd) / s.explore).glob("*.md"))
+    if not logs:
         reason = (
             f"Exploratory run without a fork log. Use the explore skill: open {s.explore}/<date>-<slug>.md, "
             "reserve the holdout, then log every data-dependent choice as you make it."
+        )
+    elif all(log_problems(p.read_text(encoding="utf-8")) for p in logs):
+        problems = "; ".join(log_problems(logs[0].read_text(encoding="utf-8")))
+        reason = (
+            f"No valid exploration log in {s.explore}/ ({logs[0].name}: {problems}). "
+            "See the explore skill (TOML front matter with schema, mode, holdout, data_seen)."
         )
 
 if reason:
