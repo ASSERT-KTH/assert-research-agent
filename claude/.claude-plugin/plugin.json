@@ -1,7 +1,0 @@
-{
-  "name": "research-agent",
-  "version": "0.1.0",
-  "description": "Data-driven research discipline: pre-registration, controls, validated instruments, honest reporting.",
-  "author": { "name": "ASSERT KTH" },
-  "license": "MIT"
-}

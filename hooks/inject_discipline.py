@@ -4,7 +4,7 @@
 This is how a harness config (which cannot replace the system prompt)
 makes the discipline present in every session, on both Claude Code and
 Codex. The path is resolved from the real script location, so it works
-through the claude/scripts and codex/scripts symlinks.
+from the plugin root (Claude Code) and through the codex/scripts symlink.
 """
 
 from __future__ import annotations

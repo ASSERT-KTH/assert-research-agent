@@ -1,0 +1,12 @@
+{
+  "name": "assert-research-agent",
+  "owner": { "name": "ASSERT KTH" },
+  "description": "The ASSERT research agent for Claude Code: data-driven research discipline, enforced.",
+  "plugins": [
+    {
+      "name": "research-agent",
+      "source": "./",
+      "description": "Data-driven research discipline: pre-registration, confirmatory vs exploratory, controls, validated instruments, honest reporting; hooks enforce CONVENTIONS.md."
+    }
+  ]
+}

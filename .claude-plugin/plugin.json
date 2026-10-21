@@ -1,0 +1,10 @@
+{
+  "name": "research-agent",
+  "version": "0.2.0",
+  "description": "Data-driven research discipline: pre-registration, confirmatory vs exploratory, controls, validated instruments, honest reporting; hooks enforce CONVENTIONS.md.",
+  "author": {
+    "name": "ASSERT KTH"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/ASSERT-KTH/assert-research-agent"
+}

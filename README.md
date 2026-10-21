@@ -5,8 +5,9 @@
 Agentic infrastructure for doing scientific research in our field. A
 **research agent** is either:
 
-- a **config on top of an existing harness** — [`claude/`](claude/) for
-  Claude Code, [`codex/`](codex/) for Codex, more to come; or
+- a **config on top of an existing harness** — this repository is itself a
+  Claude Code plugin and marketplace ([`.claude-plugin/`](.claude-plugin/)),
+  [`codex/`](codex/) configures Codex, more to come; or
 - a **dedicated harness** — _to come_.
 
 Both carry the same discipline, written once in
@@ -174,13 +175,18 @@ which take precedence:
 
 ### Claude Code
 
-`claude/` is a Claude Code plugin (`.claude-plugin/plugin.json`, skills,
-`hooks/hooks.json`). Try it without installing:
+This repository is a Claude Code plugin (`.claude-plugin/plugin.json`,
+`skills/`, `hooks/hooks.json`) and a marketplace that lists it
+(`.claude-plugin/marketplace.json`). Install it for every session (the repo
+is private: the machine needs GitHub access to ASSERT-KTH):
 
 ```sh
-claude --plugin-dir /path/to/assert-research-agent/claude
+claude plugin marketplace add ASSERT-KTH/assert-research-agent
+claude plugin install research-agent@assert-research-agent
+claude plugin update research-agent@assert-research-agent   # later, to follow main
 ```
 
+Or try a checkout without installing: `claude --plugin-dir /path/to/assert-research-agent`.
 Skills then appear as `research-agent:preregister` etc.
 
 ### Codex
@@ -212,7 +218,7 @@ schemas/           JSON Schemas of the structured data files; each file names it
 skills/            shared SKILL.md procedures
 hooks/             shared hook scripts
 tests/             hook tests and CONVENTIONS.md examples checked against hooks and osaudit (pytest tests/; CI)
-claude/            Claude Code plugin (symlinks to skills/ and hooks/)
+.claude-plugin/    Claude Code plugin manifest and marketplace (the repo root is the plugin)
 codex/             Codex config.toml snippet (symlinks to skills/ and hooks/)
 ```
 
