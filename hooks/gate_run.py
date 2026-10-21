@@ -4,8 +4,12 @@
 Directories come from `study(cwd)`: environment, else audit.toml [study] (CONVENTIONS.md).
 An audit.toml without its schema URL (audit-v1) blocks every run until fixed.
 
-- Confirmatory run: a shell command matching the run pattern (default: a path
-  under experiments/). Each experiment it invokes (experiments/<name>) must be
+A run is a command that executes a script: through an interpreter or runner
+(python, bash, uv run, osaudit run, sbatch, ...) or by its path. Reading code
+(cat, grep, git log) never is.
+
+- Confirmatory run: a run matching the run pattern (default: a path under
+  experiments/). Each experiment it invokes (experiments/<name>) must be
   named by a pre-registration committed in the prereg directory, with no
   uncommitted edits and a valid TOML front matter (hypothesis, data, α, m, ...)
   — i.e. fixed for *this* experiment before the data. When audit.toml exists,
@@ -32,6 +36,7 @@ from _common import (
     changed_paths,
     committed_preregs,
     emit,
+    executed,
     git,
     log_problems,
     prereg_problems,
@@ -48,9 +53,9 @@ def committed_preregs_naming(cwd: str, s: Study, ref: str) -> list[str]:
     return [h.split(":", 1)[1] for h in hits]
 
 
-def confirmatory_reason(cwd: str, s: Study, cmd: str) -> str | None:
+def confirmatory_reason(cwd: str, s: Study, cmd: str, run: str) -> str | None:
     dirty = {p for p in changed_paths(cwd) if p.startswith(s.prereg + "/")}
-    refs = sorted(set(s.experiment_pattern.findall(cmd)))
+    refs = sorted(set(s.experiment_pattern.findall(run)))
     if not refs:
         tracked = [p for p in git(cwd, "ls-files", s.prereg).splitlines() if p.endswith(".md")]
         if not tracked:
@@ -89,6 +94,7 @@ event = read_event()
 cmd = (event.get("tool_input") or {}).get("command", "")
 cwd = event.get("cwd") or "."
 s = study(cwd)
+run = executed(cmd)  # only what executes a script is a run; reading code is not
 
 written = sorted({p for t in shell_write_targets(cmd) for p in committed_preregs(cwd, t)})
 
@@ -98,11 +104,11 @@ if written:
         f"{', '.join(written)}: committed pre-registration, written from the shell. Refused on every harness: "
         f"stop and ask the operator to make or approve the edit. {AMEND_RULES}"
     )
-elif s.audit_problem and (s.run_pattern.search(cmd) or s.explore_pattern.search(cmd)):
+elif s.audit_problem and (s.run_pattern.search(run) or s.explore_pattern.search(run)):
     reason = f"{s.audit_problem} (CONVENTIONS.md, Repository). Fix it before any run."
-elif s.run_pattern.search(cmd):
-    reason = confirmatory_reason(cwd, s, cmd)
-elif s.explore_pattern.search(cmd):
+elif s.run_pattern.search(run):
+    reason = confirmatory_reason(cwd, s, cmd, run)
+elif s.explore_pattern.search(run):
     logs = sorted((repo_root(cwd) / s.explore).glob("*.md"))
     if not logs:
         reason = (

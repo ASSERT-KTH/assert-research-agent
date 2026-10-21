@@ -143,7 +143,7 @@ Three layers, from always-on to on-demand to enforced:
   check the repo. Same JSON protocol on both harnesses. Silent unless
   something is wrong.
   - `inject_discipline.py` (`SessionStart`) — injects `system-prompt.md`
-  - `gate_run.py` (`PreToolUse` Bash) — denies a confirmatory run unless a committed pre-registration with valid front matter names that experiment (and, with `audit.toml`, unless it goes through `osaudit run --prereg`), an exploratory run without a fork log, and any shell command writing a committed pre-registration (redirection, `tee`, `sed -i`, `mv`/`cp`/`rm`, `git checkout`/`restore`…; best effort, an interpreter writing the file is not caught)
+  - `gate_run.py` (`PreToolUse` Bash) — a *run* is a command that executes a script (an interpreter or runner such as `python`, `bash`, `uv run`, `osaudit run`, `sbatch`, or the script by its path; reading code never is); denies a confirmatory run unless a committed pre-registration with valid front matter names that experiment (and, with `audit.toml`, unless it goes through `osaudit run --prereg`), an exploratory run without a fork log, and any shell command writing a committed pre-registration (redirection, `tee`, `sed -i`, `mv`/`cp`/`rm`, `git checkout`/`restore`…; best effort, an interpreter writing the file is not caught)
   - `guard_prereg.py` (`PreToolUse` Edit/Write on Claude, `apply_patch` on Codex) — asks (Claude) or denies (Codex) before a committed pre-registration changes
   - `check_report.py` (`Stop`) — sends the agent back once if `results/` changed but no report was written, the new entry is not labelled CONFIRMATORY/EXPLORATORY, or `osaudit results`/`study` report findings
 

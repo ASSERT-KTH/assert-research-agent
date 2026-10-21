@@ -375,3 +375,25 @@ def test_runs_denied_when_audit_toml_has_no_schema(repo: Path) -> None:
         out = gate(repo, cmd)
         assert denied(out) and "audit.toml must start with schema" in out["hookSpecificOutput"]["permissionDecisionReason"]
     assert gate(repo, "ls") == {}
+
+
+@pytest.mark.parametrize("cmd", [
+    "cat experiments/run.py",
+    "grep -n alpha experiments/run.py explore/look.py",
+    "git log --oneline -- experiments/",
+    "ls experiments/ && wc -l experiments/run.py",
+])
+def test_reading_experiment_code_is_not_a_run(repo: Path, cmd: str) -> None:
+    assert gate(repo, cmd) == {}
+
+
+@pytest.mark.parametrize("cmd", [
+    "python3 experiments/run.py",
+    "cd . && FOO=1 uv run python experiments/run.py",
+    "nohup bash experiments/run.sh &",
+    "./experiments/run.sh",
+    "sbatch experiments/job.sh",
+    "timeout 60 python3.12 explore/look.py",
+])
+def test_executing_experiment_code_is_a_run(repo: Path, cmd: str) -> None:
+    assert denied(gate(repo, cmd))

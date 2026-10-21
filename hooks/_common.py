@@ -209,6 +209,37 @@ _SEPARATORS = {";", "&&", "||", "|", "&", "(", ")", "|&"}
 _REDIRECTS = {">", ">>", ">|", "&>", "&>>"}
 
 
+# Programs that execute the script they are given: only these (or a script invoked by its path)
+# make a command an experiment run. Reading code (cat, grep, git log) is never a run.
+RUNNERS = {"bash", "sh", "zsh", "uv", "uvx", "osaudit", "poetry", "pipenv", "conda", "pixi", "pytest", "make", "just",
+           "torchrun", "accelerate", "deepspeed", "sbatch", "srun", "nohup", "time", "timeout", "xargs", "parallel",
+           "node", "Rscript", "julia"}
+
+
+def executed(cmd: str) -> str:
+    """The segments of a shell command that execute a script, joined: those run by an interpreter or
+    runner (python, bash, uv run, osaudit run, ...) and those invoking a script by its path."""
+    try:
+        lexer = shlex.shlex(cmd, posix=True, punctuation_chars=True)
+        lexer.whitespace_split = True
+        tokens = list(lexer)
+    except ValueError:
+        tokens = cmd.split()
+    out, segment = [], []
+    for tok in [*tokens, ";"]:
+        if tok in _SEPARATORS:
+            words = segment
+            while words and (("=" in words[0] and not words[0].startswith("-")) or words[0] in {"sudo", "env", "command"}):
+                words = words[1:]
+            prog = os.path.basename(words[0]) if words else ""
+            if words and (re.fullmatch(r"(python|pypy)[\d.]*", prog) or prog in RUNNERS or "/" in words[0]):
+                out.append(" ".join(words))
+            segment = []
+        else:
+            segment.append(tok)
+    return "\n".join(out)
+
+
 def shell_write_targets(cmd: str) -> list[str]:
     """Paths a shell command writes, best effort: redirections, tee, in-place editors, mv/cp/rm, git rm/mv/checkout."""
     try:
