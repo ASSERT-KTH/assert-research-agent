@@ -176,7 +176,7 @@ which take precedence:
 `hooks/hooks.json`). Try it without installing:
 
 ```sh
-claude --plugin-dir /path/to/agentic-scientifc-method/claude
+claude --plugin-dir /path/to/assert-research-agent/claude
 ```
 
 Skills then appear as `research-agent:preregister` etc.
@@ -198,7 +198,7 @@ No harness support? Use the prompt alone: drop it at the root of the
 experimental repository as `AGENTS.md`.
 
 ```sh
-curl -o AGENTS.md https://raw.githubusercontent.com/ASSERT-KTH/agentic-scientifc-method/main/system-prompt.md
+curl -o AGENTS.md https://raw.githubusercontent.com/ASSERT-KTH/assert-research-agent/main/system-prompt.md
 ```
 
 ## Layout 🗺️
