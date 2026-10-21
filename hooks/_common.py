@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+AUDIT_SCHEMA = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/audit-v1.json"
 MODE_LABELS = ("CONFIRMATORY", "EXPLORATORY")
 
 
@@ -36,15 +37,23 @@ class Study:
     experiment_pattern: re.Pattern[str]
     explore_pattern: re.Pattern[str]
     audit_toml: bool
+    # Why audit.toml is not usable (no or wrong schema URL), or None.
+    audit_problem: str | None
 
 
 def study(cwd: str) -> Study:
     top = repo_root(cwd)
     toml: dict = {}
+    problem = None
     try:
-        toml = tomllib.loads((top / "audit.toml").read_text(encoding="utf-8")).get("study", {})
-    except (OSError, tomllib.TOMLDecodeError):
+        data = tomllib.loads((top / "audit.toml").read_text(encoding="utf-8"))
+        toml = data.get("study", {})
+        if data.get("schema") != AUDIT_SCHEMA:
+            problem = f'audit.toml must start with schema = "{AUDIT_SCHEMA}"'
+    except OSError:
         pass
+    except tomllib.TOMLDecodeError as e:
+        problem = f"audit.toml: {e}"
 
     def get(key: str, env: str, default: str) -> str:
         return os.environ.get(env) or str(toml.get(key) or default)
@@ -64,6 +73,7 @@ def study(cwd: str) -> Study:
         ),
         explore_pattern=re.compile(os.environ.get("RESEARCH_EXPLORE_PATTERN") or rf"(^|[\s/]){re.escape(explore)}/\S+"),
         audit_toml=(top / "audit.toml").is_file(),
+        audit_problem=problem,
     )
 
 

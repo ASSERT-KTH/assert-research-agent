@@ -1,0 +1,266 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/audit-v1.json",
+  "title": "audit.toml",
+  "description": "The repository's audit.toml: where the study, the paper, the results and the ledgers are, read by osaudit and the research-agent hooks. Specified in https://github.com/ASSERT-KTH/assert-research-agent/blob/main/CONVENTIONS.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema"
+  ],
+  "properties": {
+    "schema": {
+      "const": "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/audit-v1.json",
+      "description": "Mandatory: the URL of this schema, which leads back to the conventions."
+    },
+    "paper": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tex": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "pdf": {
+          "type": "string"
+        },
+        "md": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "results": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "files": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "instruments": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "depends": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "file",
+              "instruments"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "instruments": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "manual": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "file",
+              "by",
+              "date",
+              "reason"
+            ],
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "by": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "numbers": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "derive": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "expr"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "expr": {
+                "type": "string"
+              },
+              "file": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "reason"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "cite": {
+                "type": "string"
+              },
+              "file": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "quotes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "text",
+          "version",
+          "url",
+          "date",
+          "status"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "page": {
+            "type": [
+              "string",
+              "integer"
+            ]
+          },
+          "date": {
+            "type": "string"
+          },
+          "claim": {
+            "type": "string"
+          },
+          "version": {
+            "enum": [
+              "publisher",
+              "author-pdf",
+              "preprint",
+              "reprint",
+              "abstract",
+              "secondary"
+            ]
+          },
+          "status": {
+            "enum": [
+              "verified",
+              "unverified"
+            ]
+          }
+        }
+      }
+    },
+    "study": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "prereg": {
+          "type": "string"
+        },
+        "explore": {
+          "type": "string"
+        },
+        "experiments": {
+          "type": "string"
+        },
+        "results": {
+          "type": "string"
+        },
+        "report": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

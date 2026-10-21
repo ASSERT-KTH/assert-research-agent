@@ -67,12 +67,14 @@ def test_exploration_log_example_parses() -> None:
 def test_study_table_example_matches_hook_defaults(tmp_path: Path) -> None:
     from _common import study
 
-    block = re.search(r"```toml\n(\[study\]\n.*?)```", CONVENTIONS, re.DOTALL)
+    block = re.search(r"```toml\n(schema = [^\n]*\n\n\[study\]\n.*?)```", CONVENTIONS, re.DOTALL)
     assert block, "CONVENTIONS.md must show the [study] table"
     (tmp_path / "audit.toml").write_text(block.group(1))
     s = study(str(tmp_path))
     assert (s.prereg, s.explore, s.experiments, s.results) == ("prereg", "explore", "experiments", "results")
     assert s.report == ["REPORT.md", "NOTES.md", "README.md"]
+    assert s.audit_problem is None
+    jsonschema().validate(tomllib.loads(block.group(1)), schema("audit-v1"))
 
 
 SCHEMA_DIR = ROOT / "schemas"

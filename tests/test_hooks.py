@@ -63,6 +63,7 @@ def prereg(repo: Path, name: str, text: str, commit: bool = True) -> None:
         commit_all(repo, f"prereg {name}")
 
 
+AUDIT_HEAD = 'schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/audit-v1.json"\n\n'
 LOG = '+++\nschema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/exploration-log-v1.json"\nmode = "exploratory"\nholdout = []\ndata_seen = []\n+++\n# look\n'
 
 
@@ -101,7 +102,7 @@ def test_confirmatory_denied_with_invalid_front_matter(repo: Path, text: str, pr
 
 
 def test_confirmatory_needs_osaudit_run_when_audit_toml(repo: Path) -> None:
-    (repo / "audit.toml").write_text('[paper]\ntex = ["p.tex"]\n')
+    (repo / "audit.toml").write_text(AUDIT_HEAD + '[paper]\ntex = ["p.tex"]\n')
     prereg(repo, "a.md", valid("experiments/run.py"))
     out = gate(repo, "python experiments/run.py")
     assert denied(out) and "osaudit run --prereg prereg/a.md" in out["hookSpecificOutput"]["permissionDecisionReason"]
@@ -110,7 +111,7 @@ def test_confirmatory_needs_osaudit_run_when_audit_toml(repo: Path) -> None:
 
 
 def test_study_dirs_from_audit_toml(repo: Path) -> None:
-    (repo / "audit.toml").write_text('[study]\nprereg = "registrations"\nexperiments = "exp"\n')
+    (repo / "audit.toml").write_text(AUDIT_HEAD + '[study]\nprereg = "registrations"\nexperiments = "exp"\n')
     (repo / "registrations").mkdir()
     (repo / "registrations" / "a.md").write_text(valid("exp/run.py"))
     commit_all(repo, "prereg")
@@ -325,7 +326,7 @@ def stop_with(repo: Path, env: dict[str, str]) -> dict:
 
 
 def labelled_results(repo: Path) -> None:
-    (repo / "audit.toml").write_text('[paper]\ntex = ["p.tex"]\n')
+    (repo / "audit.toml").write_text(AUDIT_HEAD + '[paper]\ntex = ["p.tex"]\n')
     commit_all(repo, "audit")
     (repo / "results").mkdir()
     (repo / "results" / "r.json").write_text("{}")
@@ -362,3 +363,15 @@ def test_confirmatory_denied_without_schema(repo: Path) -> None:
     prereg(repo, "a.md", "\n".join(l for l in valid("experiments/run.py").splitlines() if not l.startswith("schema")))
     out = gate(repo, "python experiments/run.py")
     assert denied(out) and "schema must be" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_runs_denied_when_audit_toml_has_no_schema(repo: Path) -> None:
+    (repo / "audit.toml").write_text('[paper]\ntex = ["p.tex"]\n')
+    prereg(repo, "a.md", valid("experiments/run.py"))
+    (repo / "explore").mkdir()
+    (repo / "explore" / "log.md").write_text(LOG)
+    for cmd in ("osaudit run --prereg prereg/a.md -o results/r.json -- python experiments/run.py",
+                "python explore/look.py"):
+        out = gate(repo, cmd)
+        assert denied(out) and "audit.toml must start with schema" in out["hookSpecificOutput"]["permissionDecisionReason"]
+    assert gate(repo, "ls") == {}

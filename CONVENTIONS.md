@@ -11,10 +11,12 @@ Each rule is normative (MUST) and names the failure it prevents. Rule ids (`stud
 
 ## Repository
 
-- The repository root holds `audit.toml`, which declares where the study, the paper, the results and the ledgers are. *Prevents: an audit that silently checks nothing because it looked in the wrong place.*
+- The repository root holds `audit.toml`, which declares where the study, the paper, the results and the ledgers are. Its first line is `schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/audit-v1.json"`; without it neither tool proceeds (osaudit exits 2, `hook:gate_run` refuses runs). *Prevents: an audit that silently checks nothing because it looked in the wrong place.*
 - `[study]` in `audit.toml` names the study directories; every key is optional and read by both tools (the hooks also accept the environment variables `RESEARCH_PREREG_DIR`, `RESEARCH_EXPLORE_DIR`, `RESEARCH_RESULTS_DIR`, `RESEARCH_REPORT_FILES`, which take precedence). *Prevents: two tools disagreeing on where the pre-registrations are.*
 
 ```toml
+schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/audit-v1.json"
+
 [study]
 prereg = "prereg"            # pre-registrations, one .md per question
 explore = "explore"          # exploratory scripts and their logs
@@ -24,7 +26,7 @@ report = ["REPORT.md", "NOTES.md", "README.md"]   # the written record
 ```
 - The paper is LaTeX sources or a PDF. When both exist, the LaTeX sources are audited. *Prevents: auditing a stale PDF that no longer matches the sources.*
 - A Markdown document that states results (a findings file, a report) carries TOML front matter (`+++ ... +++`) with its structured data, starting with `schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/document-v1.json"`, and is declared in `[paper] md`; its numbers are then audited as a paper's. A Markdown file without front matter is not audited. *Prevents: results stated in Markdown, the usual form of a findings file, escaping the audit that a paper gets.*
-- Every structured data file names its schema in a mandatory `schema` key: the URL of a versioned JSON Schema in [`schemas/`](schemas/) of this repository (`https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/<name>-v<n>.json`). A missing or unknown URL is a defect (`schema/missing`, `schema/unknown`; refused by `hook:gate_run`). The schemas: [`prereg-v1`](schemas/prereg-v1.json) (pre-registration front matter), [`exploration-log-v1`](schemas/exploration-log-v1.json), [`document-v1`](schemas/document-v1.json) (front matter of an audited Markdown document), [`provenance-v1`](schemas/provenance-v1.json) (results provenance, written by `osaudit run`). *Prevents: a data file whose format cannot be found, checked or evolved; whoever finds one is led back to these conventions.*
+- Every structured data file names its schema in a mandatory `schema` key: the URL of a versioned JSON Schema in [`schemas/`](schemas/) of this repository (`https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/<name>-v<n>.json`). A missing or unknown URL is a defect (`schema/missing`, `schema/unknown`; refused by `hook:gate_run`). The schemas: [`audit-v1`](schemas/audit-v1.json) (`audit.toml`), [`prereg-v1`](schemas/prereg-v1.json) (pre-registration front matter), [`exploration-log-v1`](schemas/exploration-log-v1.json), [`document-v1`](schemas/document-v1.json) (front matter of an audited Markdown document), [`provenance-v1`](schemas/provenance-v1.json) (results provenance, written by `osaudit run`). *Prevents: a data file whose format cannot be found, checked or evolved; whoever finds one is led back to these conventions.*
 - Every machine-readable file of the audit (configuration, derivations, ledgers) is TOML. *Prevents: two parsers, two sets of quoting rules, two ways to be wrong.*
 - An entry of `audit.toml` that matches nothing in the paper is a defect, and is reported. *Prevents: allow-lists and derivations that outlive the text they justified.*
 

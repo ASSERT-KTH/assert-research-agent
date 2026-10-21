@@ -2,6 +2,7 @@
 """PreToolUse(Bash): every run is either confirmatory or exploratory, and says so.
 
 Directories come from `study(cwd)`: environment, else audit.toml [study] (CONVENTIONS.md).
+An audit.toml without its schema URL (audit-v1) blocks every run until fixed.
 
 - Confirmatory run: a shell command matching the run pattern (default: a path
   under experiments/). Each experiment it invokes (experiments/<name>) must be
@@ -97,6 +98,8 @@ if written:
         f"{', '.join(written)}: committed pre-registration, written from the shell. Refused on every harness: "
         f"stop and ask the operator to make or approve the edit. {AMEND_RULES}"
     )
+elif s.audit_problem and (s.run_pattern.search(cmd) or s.explore_pattern.search(cmd)):
+    reason = f"{s.audit_problem} (CONVENTIONS.md, Repository). Fix it before any run."
 elif s.run_pattern.search(cmd):
     reason = confirmatory_reason(cwd, s, cmd)
 elif s.explore_pattern.search(cmd):
