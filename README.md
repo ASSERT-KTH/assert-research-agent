@@ -107,8 +107,8 @@ Three layers, from always-on to on-demand to enforced:
   check the repo. Same JSON protocol on both harnesses. Silent unless
   something is wrong.
   - `inject_discipline.py` (`SessionStart`) — injects `system-prompt.md`
-  - `gate_run.py` (`PreToolUse` Bash) — denies a confirmatory run unless a committed pre-registration names that experiment, and an exploratory run without a fork log
-  - `guard_prereg.py` (`PreToolUse` Edit/Write on Claude, `apply_patch` on Codex) — asks (Claude) or denies (Codex) before a committed pre-registration changes; shell edits (`echo >>`) are not guarded
+  - `gate_run.py` (`PreToolUse` Bash) — denies a confirmatory run unless a committed pre-registration names that experiment, an exploratory run without a fork log, and any shell command writing a committed pre-registration (redirection, `tee`, `sed -i`, `mv`/`cp`/`rm`, `git checkout`/`restore`…; best effort, an interpreter writing the file is not caught)
+  - `guard_prereg.py` (`PreToolUse` Edit/Write on Claude, `apply_patch` on Codex) — asks (Claude) or denies (Codex) before a committed pre-registration changes
   - `check_report.py` (`Stop`) — sends the agent back once if `results/` changed but no report was written, or the new entry is not labelled CONFIRMATORY/EXPLORATORY
 
 Rule of thumb: if the model *should* know it → prompt; if it is a

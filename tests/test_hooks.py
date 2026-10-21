@@ -200,3 +200,54 @@ def test_guard_codex_denies_committed_prereg_absolute_and_relative(repo: Path) -
 def test_guard_codex_silent_on_new_prereg_and_other_files(repo: Path) -> None:
     assert guard(repo, apply_patch("Add File: prereg/new.md")) == {}
     assert guard(repo, apply_patch("Update File: README.md")) == {}
+
+
+SHELL_WRITES = [
+    "echo 'alpha=0.1' >> prereg/a.md",
+    "echo x >prereg/a.md",
+    "printf x | tee -a prereg/a.md",
+    "sed -i 's/0.05/0.1/' prereg/a.md",
+    "perl -pi -e 's/a/b/' prereg/a.md",
+    "mv prereg/a.md prereg/b.md",
+    "rm -f prereg/*.md",
+    "rm -rf prereg",
+    "cp /tmp/x.md prereg/a.md",
+    "git checkout -- prereg/a.md",
+    "cd . && FOO=1 sudo truncate -s0 prereg/a.md",
+    "echo x > ./prereg/../prereg/a.md",
+]
+
+SHELL_OK = [
+    "cat prereg/a.md",
+    "cat prereg/a.md > /tmp/copy.md",
+    "grep -n alpha prereg/a.md 2>&1 | head",
+    "cp prereg/a.md /tmp/backup.md",
+    "cat > prereg/new.md <<'EOF'\nMode: CONFIRMATORY\nEOF",
+    "git add prereg/new.md && git commit -m 'prereg: new'",
+    "git diff prereg/a.md",
+]
+
+
+@pytest.mark.parametrize("cmd", SHELL_WRITES)
+def test_shell_write_to_committed_prereg_denied(repo: Path, cmd: str) -> None:
+    prereg(repo, "a.md", "Procedure: experiments/run.py\n")
+    out = gate(repo, cmd)
+    assert denied(out) and "from the shell" in out["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+@pytest.mark.parametrize("cmd", SHELL_OK)
+def test_shell_read_or_new_prereg_allowed(repo: Path, cmd: str) -> None:
+    prereg(repo, "a.md", "Procedure: experiments/run.py\n")
+    assert gate(repo, cmd) == {}
+
+
+def test_shell_write_absolute_path_denied(repo: Path) -> None:
+    prereg(repo, "a.md", "x\n")
+    assert denied(gate(repo, f"echo x >> {repo / 'prereg' / 'a.md'}"))
+
+
+def test_shell_write_from_subdirectory_denied(repo: Path) -> None:
+    prereg(repo, "a.md", "x\n")
+    (repo / "sub").mkdir()
+    out = run_hook("gate_run.py", {"cwd": str(repo / "sub"), "tool_input": {"command": "echo x >> ../prereg/a.md"}})
+    assert denied(out)

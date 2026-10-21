@@ -12,21 +12,29 @@
   path under explore/). Allowed without a pre-registration, but only once a
   fork log (.md in EXPLORE_DIR) exists, so data-dependent choices are
   written down as they are made.
+
+Any shell command that writes a committed pre-registration (redirection,
+tee, sed -i, mv/cp/rm, git checkout/restore…) is refused on both harnesses:
+the edit tools are guarded by guard_prereg, and the shell must not be the
+way around it. Writing a new, uncommitted pre-registration is allowed.
 """
 
 from __future__ import annotations
 
 from _common import (
+    AMEND_RULES,
     EXPERIMENT_PATTERN,
     EXPLORE_DIR,
     EXPLORE_PATTERN,
     PREREG_DIR,
     RUN_PATTERN,
     changed_paths,
+    committed_preregs,
     emit,
     git,
     read_event,
     repo_root,
+    shell_write_targets,
 )
 
 
@@ -68,8 +76,15 @@ event = read_event()
 cmd = (event.get("tool_input") or {}).get("command", "")
 cwd = event.get("cwd") or "."
 
+written = sorted({p for t in shell_write_targets(cmd) for p in committed_preregs(cwd, t)})
+
 reason = None
-if RUN_PATTERN.search(cmd):
+if written:
+    reason = (
+        f"{', '.join(written)}: committed pre-registration, written from the shell. Refused on every harness: "
+        f"stop and ask the operator to make or approve the edit. {AMEND_RULES}"
+    )
+elif RUN_PATTERN.search(cmd):
     reason = confirmatory_reason(cwd, cmd)
 elif EXPLORE_PATTERN.search(cmd):
     if not list((repo_root(cwd) / EXPLORE_DIR).glob("*.md")):
