@@ -30,7 +30,9 @@ if rel.startswith(PREREG_DIR + "/") and git(top, "ls-files", rel).strip():
         "hookEventName": "PreToolUse",
         "permissionDecision": "ask",
         "permissionDecisionReason": (
-            f"{rel} is a committed pre-registration. Changing it after results exist moves the bar. "
-            "If you proceed, append a 'Bar moved' entry: which direction, on what evidence."
+            f"{rel} is a committed pre-registration. If you proceed, add an 'Amendments' entry "
+            "(date, whether any of the data was seen yet, what, why) and commit it. Amended before the data "
+            "was seen: still confirmatory. After: the amended part is EXPLORATORY. A moved threshold also "
+            "gets a 'Bar moved' entry: which direction, on what evidence."
         ),
     }})

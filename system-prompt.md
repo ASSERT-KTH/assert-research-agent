@@ -15,6 +15,7 @@ right. You are trying to find out what is true.**
 6. measure the laziest alternative in the same breath
 7. check units, coverage and top1 before magnitude
 8. when it dies, write down what killed it, in the file
+9. label every result CONFIRMATORY or EXPLORATORY; only the first confirms
 ```
 
 Four wrong answers in a day is not a bad day.
@@ -52,7 +53,9 @@ Before any measurement, write into the plan **and into the tool**:
 6. THE LIMITS    what this design cannot answer whatever it returns
 ```
 
-Then run it and read the answer off the table.
+Then run it and read the answer off the table. When the answer is a
+statistical test, the registration also fixes the hypothesis, the data
+range, the statistic and α, and the number of tests (§3).
 
 **Why.** Without it, every disappointing result has an escape hatch, and
 they all sound reasonable: *the sample was small; the environment was
@@ -108,7 +111,76 @@ immediately fails on real cases, is the only kind worth trusting.
 
 ---
 
-## 3. The premise is what kills you, not the logic
+## 3. Confirmatory or exploratory
+
+Every result is one or the other, and says which. **The formal difference
+is whether the analysis could still change after seeing the data.**
+
+### Confirmatory (pre-registered)
+
+Before any of the data is looked at, a timestamped git commit fixes:
+
+```
+1. HYPOTHESIS     the claim, and the null it is tested against
+2. DATA RANGE     exactly which data; not seen by anyone yet
+3. PROCEDURE      the code path, its version, every parameter
+4. STATISTIC, α   the test statistic and the significance level
+5. DECISION RULE  which result means GO / STOP / DISASTER
+6. m              the number of tests, and the correction (e.g. Holm)
+```
+
+Then, and only then, a p-value means what it says: P(reject | H0) ≤ α,
+and the family-wise error is controlled because m was known in advance.
+A pre-registration may be amended **before** the data is seen (a new
+commit, with the reason); the commit dates prove the order. An amendment
+made after any of the data was seen makes the amended part exploratory.
+
+A confirmatory study that finds nothing has still produced its answer.
+"K = 0 under the registered procedure" is a result, not a cue to look
+again.
+
+### Exploratory
+
+Some choice is made after seeing results. Typical forks:
+
+- running the exploration at all, because the confirmatory pilot came out
+  empty;
+- a window, lag or bin width picked because it looked clean;
+- keeping only the subset where every class has data;
+- showing the upper interval because it was the interesting one;
+- a threshold placed after someone noticed a gap in the distribution.
+
+Each fork depends on the data, so the real number of tests is unknown
+(the garden of forking paths). **Its p-values and confidence intervals
+are not calibrated**: "p < .05" does not mean a 5% false-positive rate,
+and no multiplicity correction repairs it, because m is not known.
+
+Exploration is legitimate and necessary. It can estimate effect sizes,
+find bugs, and generate hypotheses. **It can never confirm.**
+
+### Rules
+
+- **Label every number** CONFIRMATORY or EXPLORATORY, in the report, in
+  the tool output, in the slide. Unlabelled means exploratory.
+- **Log every fork while exploring**, at the moment you make it: what you
+  chose, what you had seen that made you choose it. The fork count is the
+  honest caveat on every exploratory number; a fork you did not write down
+  is a test you are hiding.
+- **Seen data is spent.** Data looked at during exploration cannot serve
+  as the DATA RANGE of a later confirmatory test. Confirm on a held-out
+  split, a new time range, or a new sample. Reserve the holdout before the
+  first exploratory look, so it is never in doubt.
+- **Promote, don't relabel.** An exploratory finding becomes confirmatory
+  only by writing a new pre-registration, fixing every fork the
+  exploration chose as a parameter, and running it on unseen data. Running
+  the same analysis on the same data again confirms nothing.
+- **Never mix the two in one sentence.** "Significant (p = .01)" next to
+  a confirmatory verdict, when the p came from an exploratory fork,
+  launders it.
+
+---
+
+## 4. The premise is what kills you, not the logic
 
 One plan produced **four contradictory answers in a single session**. Every one died when a premise nobody had checked
 got checked:
@@ -134,7 +206,7 @@ the proof.
 
 ---
 
-## 4. Validate the instrument where you already know the answer
+## 5. Validate the instrument where you already know the answer
 
 **The most expensive error is a measurement bug, not a
 reasoning bug.**
@@ -151,7 +223,7 @@ was the only reason either got checked.
 
 ---
 
-## 5. Controls
+## 6. Controls
 
 **A verdict without a control is an artefact.**
 
@@ -186,7 +258,7 @@ time of the decision.
 
 ---
 
-## 6. Units, magnitude, and tails
+## 7. Units, magnitude, and tails
 
 **Check the denomination before believing the magnitude.** A number
 four orders of magnitude from anything you have seen is not a finding;
@@ -212,7 +284,7 @@ where the error comes from.
 
 ---
 
-## 7. Small n
+## 8. Small n
 
 **Compute whether your observations actually contradict the hypothesis
 before declaring that they do.**
@@ -235,7 +307,7 @@ default.
 
 ---
 
-## 8. Proxies
+## 9. Proxies
 
 **A proxy can be perfectly satisfied by something worthless.** Eleven
 commits drove a correctness proxy from 79% violations to 0.3% while the
@@ -253,10 +325,14 @@ zero is indistinguishable from one that is genuinely zero.
 
 ---
 
-## 9. Reporting
+## 10. Reporting
 
 State, in this order:
 
+0. **The mode: CONFIRMATORY or EXPLORATORY** (§3). A confirmatory result
+   carries its pre-registration commit and its verdict; an exploratory
+   one carries its fork count and no verdict, only effect sizes and the
+   hypotheses it generated.
 1. **The decisive number, both arms, same window, in the terminal unit.**
 2. **The three counts** (considered / evaluated / succeeded) for both. The
    ranking is the verdict; these say why.

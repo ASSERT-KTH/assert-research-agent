@@ -21,6 +21,7 @@ A working discipline for deciding by measurement instead of argument:
 
 - 🔁 the loop — premise, measure, register, control, instrument, decide, record
 - 📝 pre-registration — GO / STOP / DISASTER written down *before* any result exists
+- 🔀 confirmatory vs exploratory — every result says which; only the first confirms
 - 🧨 the premise, not the logic, is what kills a result
 - 🧪 validate the instrument where the answer is already known
 - 🐌 measure the laziest alternative in the same breath
@@ -50,7 +51,38 @@ In a research agent this is enforced, not just advised:
 - a hook **refuses to run an experiment** until a pre-registration is
   committed (git history is the timestamp proving it came first);
 - a hook **asks the human** before a committed pre-registration is edited,
-  and the edit must record which way the bar moved and on what evidence.
+  and the edit must record whether the data was seen yet, which way the bar
+  moved and on what evidence.
+
+## Confirmatory vs exploratory 🔀
+
+The formal difference: **could the analysis still change after seeing the
+data?**
+
+- ✅ **Confirmatory** — before any data is looked at, a timestamped git
+  commit fixes the hypothesis, the data range, the procedure, the test
+  statistic and α, the decision rule, and the number of tests m. The
+  p-value then means what it says, P(reject | H0) ≤ α, and a correction
+  such as Holm works because m is known. Amendments are allowed before the
+  data is seen, as new commits.
+- 🔭 **Exploratory** — some choice was made after seeing results: running
+  the exploration because a pilot came out empty, a window picked because
+  it looked clean, a subset kept, a threshold placed at a gap. Each fork
+  depends on the data, so the real number of tests is unknown and p-values
+  and CIs are not calibrated. Exploration estimates effect sizes and
+  generates hypotheses; it **never confirms**.
+
+An exploratory finding becomes confirmatory only by a new pre-registration
+that fixes its forks as parameters and runs on data nobody has seen —
+reserve the holdout before the first look.
+
+How the infrastructure supports both:
+
+- `experiments/` runs are confirmatory: gated on a committed `prereg/*.md`.
+- `explore/` runs are exploratory: allowed without a pre-registration, but
+  only once a fork log `explore/<date>-<slug>.md` exists (`explore` skill).
+- Every report entry is labelled `CONFIRMATORY` or `EXPLORATORY`; the stop
+  hook sends the agent back if new results come with an unlabelled entry.
 
 ## How a research agent is built 🧱
 
@@ -62,18 +94,19 @@ Three layers, from always-on to on-demand to enforced:
 - 🧰 **Skills** — [`skills/`](skills/), one `SKILL.md` per procedure,
   loaded only when the task matches its description. Same format for Claude
   Code and Codex. Turn principles into steps and templates:
-  - `preregister` — premise check + GO/STOP/DISASTER table, committed before running
+  - `preregister` — premise check, hypothesis, unseen data range, α, m, GO/STOP/DISASTER table, committed before a confirmatory run
+  - `explore` — holdout reserved, fork log kept as choices are made, output labelled EXPLORATORY, ends in hypotheses to pre-register
   - `validate-instrument` — known-answer check, units, coverage, median/top1
   - `add-control` — baseline + laziest-alternative arms, interleaved, arm recorded
-  - `report-result` — fixed reporting order, negatives as loud as positives
+  - `report-result` — mode label first, fixed reporting order, negatives as loud as positives
 - 🪝 **Hooks** — [`hooks/`](hooks/), small Python scripts run by the harness
   on lifecycle events. They do not rely on the model remembering; they
   check the repo. Same JSON protocol on both harnesses. Silent unless
   something is wrong.
   - `inject_discipline.py` (`SessionStart`) — injects `system-prompt.md`
-  - `gate_run.py` (`PreToolUse` Bash) — denies experiment runs without a committed pre-registration
+  - `gate_run.py` (`PreToolUse` Bash) — denies confirmatory runs without a committed pre-registration, and exploratory runs without a fork log
   - `guard_prereg.py` (`PreToolUse` Edit/Write, Claude only for now) — asks before a committed pre-registration changes
-  - `check_report.py` (`Stop`) — sends the agent back once if `results/` changed but no report was written
+  - `check_report.py` (`Stop`) — sends the agent back once if `results/` changed but no report was written, or the new entry is not labelled CONFIRMATORY/EXPLORATORY
 
 Rule of thumb: if the model *should* know it → prompt; if it is a
 procedure with a template → skill; if forgetting it silently corrupts a
@@ -84,9 +117,12 @@ result → hook.
 The hooks assume this layout in the experimental repository (override with
 environment variables):
 
-- `experiments/` — entry points; a shell command touching a path here is an
-  *experiment run* (`RESEARCH_RUN_PATTERN`, a regex)
+- `experiments/` — confirmatory entry points; a shell command touching a
+  path here is a *confirmatory run* (`RESEARCH_RUN_PATTERN`, a regex)
 - `prereg/` — pre-registrations, one `.md` per question (`RESEARCH_PREREG_DIR`)
+- `explore/` — exploratory scripts and their fork logs; a shell command
+  touching a path here is an *exploratory run* (`RESEARCH_EXPLORE_PATTERN`,
+  a regex; logs in `RESEARCH_EXPLORE_DIR`)
 - `results/` — raw outputs (`RESEARCH_RESULTS_DIR`)
 - `REPORT.md` — the written record (`RESEARCH_REPORT_FILES`, comma-separated)
 
@@ -129,6 +165,7 @@ curl -o AGENTS.md https://raw.githubusercontent.com/ASSERT-KTH/agentic-scientifc
 system-prompt.md   the discipline (single source of truth)
 skills/            shared SKILL.md procedures
 hooks/             shared hook scripts
+tests/             hook tests (pytest tests/)
 claude/            Claude Code plugin (symlinks to skills/ and hooks/)
 codex/             Codex config.toml snippet (symlinks to skills/ and hooks/)
 ```
