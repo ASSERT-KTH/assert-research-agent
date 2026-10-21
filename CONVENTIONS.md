@@ -23,6 +23,7 @@ results = "results"          # results JSON files (when [results] files is not d
 report = ["REPORT.md", "NOTES.md", "README.md"]   # the written record
 ```
 - The paper is LaTeX sources or a PDF. When both exist, the LaTeX sources are audited. *Prevents: auditing a stale PDF that no longer matches the sources.*
+- A Markdown document that states results (a findings file, a report) carries TOML front matter (`+++ ... +++`) with its structured data, and is declared in `[paper] md`; its numbers are then audited as a paper's. A Markdown file without front matter is not audited. *Prevents: results stated in Markdown, the usual form of a findings file, escaping the audit that a paper gets.*
 - Every machine-readable file of the audit (configuration, derivations, ledgers) is TOML. *Prevents: two parsers, two sets of quoting rules, two ways to be wrong.*
 - An entry of `audit.toml` that matches nothing in the paper is a defect, and is reported. *Prevents: allow-lists and derivations that outlive the text they justified.*
 
@@ -33,6 +34,7 @@ Every result is **confirmatory** or **exploratory**. The difference is whether t
 ### Pre-registration (confirmatory)
 
 - A confirmatory run is a run of `experiments/<name>` (a script, or a directory of them) under a pre-registration `prereg/<yyyy-mm-dd>-<slug>.md` that names it, committed before the run with no uncommitted change (`hook:gate_run`, `study/not-preregistered`). *Prevents: a bar written after the result, and a registration for one experiment used to license another.*
+- A pre-registration is not a plan, and is never named `plan*`. Plans are working scratch, edited during execution and often not committed; predictions kept only in a plan have no verifiable date. *Prevents: "pre-registered" claims that rest on a gitignored file last touched seconds before the results were committed.*
 - A pre-registration is Markdown that starts with TOML front matter between `+++` lines. Every field below is mandatory, except `amendments` (`hook:gate_run`, `study/not-preregistered`). *Prevents: a registration no tool can read, so its α, its m and its data are whatever someone later says they were.*
 
 ```toml
