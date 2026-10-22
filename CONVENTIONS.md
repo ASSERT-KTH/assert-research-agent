@@ -83,7 +83,7 @@ data_seen = ["data/train.csv"]   # every path looked at, kept current
 +++
 ```
 
-- **Seen data is spent.** No input of a confirmatory run is an input of an exploratory or unlabelled run (same sha256, under any name), nor overlaps a log's `data_seen` (`study/data-reused`). *Prevents: confirming a hypothesis on the data that suggested it.*
+- **Seen data is spent.** No input of a confirmatory run is an input of an exploratory or unlabelled run made no later than it (same sha256, under any name; ordered by the provenance `now`), nor overlaps the `data_seen` of a log first committed no later than it (`study/data-reused`). Exploring a confirmatory result's data afterwards, for instance to check it for a confound, leaves that result confirmatory. The data is then spent: any later registration on it is refused by this same rule. *Prevents: confirming a hypothesis on the data that suggested it, without forbidding the audit of a confirmed result.*
 - An exploratory finding becomes confirmatory only through a new pre-registration that fixes its forks as parameters and runs on data nobody has seen. *Prevents: relabelling.*
 
 ### Runs and reports

@@ -114,8 +114,8 @@ Two tools enforce it at two moments:
   - `osaudit study` proves every confirmatory result was pre-registered
     (`study/not-preregistered`), on registered experiments and data
     (`study/prereg-mismatch`), not amended without a record or after the
-    data was seen (`study/amended`), and on data no exploration touched,
-    by path or by sha256 (`study/data-reused`);
+    data was seen (`study/amended`), and on data no exploration had touched
+    before the run, by path or by sha256 (`study/data-reused`);
   - `osaudit numbers` flags a paper number traced to exploratory results
     whose paragraph does not say so (`numbers/exploratory-unlabelled`).
 
