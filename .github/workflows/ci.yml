@@ -14,5 +14,5 @@ jobs:
         with:
           python-version: "3.14"
       # CONVENTIONS.md examples are checked against schemas/ (jsonschema) and osaudit's validator.
-      - run: uv venv && uv pip install pytest jsonschema 'osaudit>=0.5.0'
+      - run: uv venv && uv pip install pytest jsonschema 'osaudit>=0.6.2'
       - run: .venv/bin/pytest -q -rs tests
