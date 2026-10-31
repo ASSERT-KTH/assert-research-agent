@@ -11,8 +11,8 @@ Each rule is normative (MUST) and names the failure it prevents. Rule ids (`stud
 
 ## Repository
 
-- The repository root holds `audit.toml`, which declares where the study, the paper, the results and the ledgers are. Its first line is `schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/audit-v1.json"`; without it neither tool proceeds (osaudit exits 2, `hook:gate_run` refuses runs). *Prevents: an audit that silently checks nothing because it looked in the wrong place.*
-- `[study]` in `audit.toml` names the study directories; every key is optional and read by both tools (the hooks also accept the environment variables `RESEARCH_PREREG_DIR`, `RESEARCH_EXPLORE_DIR`, `RESEARCH_RESULTS_DIR`, `RESEARCH_REPORT_FILES`, which take precedence). *Prevents: two tools disagreeing on where the pre-registrations are.*
+- The repository root holds `osaudit.toml` (the former name `audit.toml` is read when no `osaudit.toml` exists), which declares where the study, the paper, the results and the ledgers are. Its first line is `schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/audit-v1.json"`; without it neither tool proceeds (osaudit exits 2, `hook:gate_run` refuses runs). *Prevents: an audit that silently checks nothing because it looked in the wrong place.*
+- `[study]` in `osaudit.toml` names the study directories; every key is optional and read by both tools (the hooks also accept the environment variables `RESEARCH_PREREG_DIR`, `RESEARCH_EXPLORE_DIR`, `RESEARCH_RESULTS_DIR`, `RESEARCH_REPORT_FILES`, which take precedence). *Prevents: two tools disagreeing on where the pre-registrations are.*
 
 ```toml
 schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/audit-v1.json"
@@ -26,9 +26,9 @@ report = ["REPORT.md", "NOTES.md", "README.md"]   # the written record
 ```
 - The paper is LaTeX sources or a PDF. When both exist, the LaTeX sources are audited. *Prevents: auditing a stale PDF that no longer matches the sources.*
 - A Markdown document that states results (a findings file, a report) carries TOML front matter (`+++ ... +++`) with its structured data, starting with `schema = "https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/document-v1.json"`, and is declared in `[paper] md`; its numbers are then audited as a paper's. A Markdown file without front matter is not audited. *Prevents: results stated in Markdown, the usual form of a findings file, escaping the audit that a paper gets.*
-- Every structured data file names its schema in a mandatory `schema` key: the URL of a versioned JSON Schema in [`schemas/`](schemas/) of this repository (`https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/<name>-v<n>.json`). A missing or unknown URL is a defect (`schema/missing`, `schema/unknown`; refused by `hook:gate_run`). The schemas: [`audit-v1`](schemas/audit-v1.json) (`audit.toml`), [`prereg-v1`](schemas/prereg-v1.json) (pre-registration front matter), [`exploration-log-v1`](schemas/exploration-log-v1.json), [`document-v1`](schemas/document-v1.json) (front matter of an audited Markdown document), [`provenance-v1`](schemas/provenance-v1.json) (results provenance, written by `osaudit run`). *Prevents: a data file whose format cannot be found, checked or evolved; whoever finds one is led back to these conventions.*
+- Every structured data file names its schema in a mandatory `schema` key: the URL of a versioned JSON Schema in [`schemas/`](schemas/) of this repository (`https://github.com/ASSERT-KTH/assert-research-agent/blob/main/schemas/<name>-v<n>.json`). A missing or unknown URL is a defect (`schema/missing`, `schema/unknown`; refused by `hook:gate_run`). The schemas: [`audit-v1`](schemas/audit-v1.json) (`osaudit.toml`), [`prereg-v1`](schemas/prereg-v1.json) (pre-registration front matter), [`exploration-log-v1`](schemas/exploration-log-v1.json), [`document-v1`](schemas/document-v1.json) (front matter of an audited Markdown document), [`provenance-v1`](schemas/provenance-v1.json) (results provenance, written by `osaudit run`). *Prevents: a data file whose format cannot be found, checked or evolved; whoever finds one is led back to these conventions.*
 - Every machine-readable file of the audit (configuration, derivations, ledgers) is TOML. *Prevents: two parsers, two sets of quoting rules, two ways to be wrong.*
-- An entry of `audit.toml` that matches nothing in the paper is a defect, and is reported. *Prevents: allow-lists and derivations that outlive the text they justified.*
+- An entry of `osaudit.toml` that matches nothing in the paper is a defect, and is reported. *Prevents: allow-lists and derivations that outlive the text they justified.*
 
 ## Study
 
@@ -124,17 +124,17 @@ data_seen = ["data/train.csv"]   # every path looked at, kept current
   "osaudit": "0.4.0"
 }
 ```
-- Results are produced from committed instruments: the instruments (`[results] instruments` in `audit.toml`) are unchanged since the recorded commit (`results/stale`). A results file that depends on only some of them declares them in `[[results.depends]]` (`file`, `instruments`). *Prevents: results of a version of the code that no longer exists, without rerunning every instrument for every change.*
+- Results are produced from committed instruments: the instruments (`[results] instruments` in `osaudit.toml`) are unchanged since the recorded commit (`results/stale`). A results file that depends on only some of them declares them in `[[results.depends]]` (`file`, `instruments`). *Prevents: results of a version of the code that no longer exists, without rerunning every instrument for every change.*
 - An input is a frozen snapshot: a directory input hashes as the manifest of its files, so a live directory (a log store that grows every day) never matches its record (`results/input-changed`, `results/input-missing`, with `--inputs`). *Prevents: results that no one can recompute, even with the same code.*
 - Re-running the recorded command at the recorded time anchor prints the same results (`results/not-reproduced`, with `--rerun`). *Prevents: results that no instrument can produce any more, and numbers edited by hand.*
 - An instrument never reads the clock or a file time: a time-dependent value (an age, a duration until now) is computed against the anchor in `$OSAUDIT_NOW`, recorded as `provenance.now` (`results/wall-clock`). A justified exception carries `osaudit: allow results/wall-clock -- <reason>` in a comment on the same line. *Prevents: values that shift between runs, such as ages computed against `now()` at analysis time, or against the modification time of a file.*
 - A results file made by a person (a manual check of an automated classifier) is declared in `[[results.manual]]` with `file`, `by`, `date`, `reason`, and is exempt from provenance. *Prevents: a human judgment passed off as an instrument output, or rejected for not being one.*
-- An exemption or a dependency entry that applies to nothing, inline or in `audit.toml`, is a defect (`results/unused`). *Prevents: exemptions that outlive the code they justified.*
+- An exemption or a dependency entry that applies to nothing, inline or in `osaudit.toml`, is a defect (`results/unused`). *Prevents: exemptions that outlive the code they justified.*
 - Every instrument is tested on a known-positive, a known-negative and a boundary case (the `validate-instrument` skill; not yet checked by a tool). *Prevents: trusting the numbers of an unvalidated instrument.*
 
 ## Quotes
 
-- Every verbatim quote with a citation in the same sentence has an entry in the quote ledger, the `[[quotes]]` entries of `audit.toml` (`quotes/no-entry`). *Prevents: a quote no one checked.*
+- Every verbatim quote with a citation in the same sentence has an entry in the quote ledger, the `[[quotes]]` entries of `osaudit.toml` (`quotes/no-entry`). *Prevents: a quote no one checked.*
 - A ledger entry records the citation `key`, the full sentence `text` verbatim, the `version` read (`publisher`, `author-pdf`, `preprint`, `reprint`, `abstract`, `secondary`), its `url`, the `page`, the `date` read and the `status` (`verified` or `unverified`), optionally the `claim` it supports. *Prevents: losing which text was actually read.*
 - The quote of the paper is verbatim in the entry's text; `[...]` marks a cut (`quotes/mismatch`). *Prevents: a quote reworded, or attributed to a text that does not contain it.*
 - The page cited is the page recorded (`quotes/page`), and an entry read in a paged version records its page (`quotes/no-page`). *Prevents: a page no one read.*

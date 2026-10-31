@@ -4,7 +4,7 @@
 If the results directory changed but no report file did, the agent is sent
 back to record the outcome (report-result skill). If a report did change but
 the added text carries neither CONFIRMATORY nor EXPLORATORY, it is sent back
-to label it. When audit.toml exists and osaudit is installed, `osaudit
+to label it. When osaudit.toml exists and osaudit is installed, `osaudit
 results` and `osaudit study` run on the repo and their findings send the agent
 back too. Fires at most once per stop (stop_hook_active), so it cannot loop.
 """
@@ -55,7 +55,7 @@ elif results and not any(label in added_text(cwd, p) for p in reported for label
         f"Report updated ({', '.join(reported)}) but the new entry says neither CONFIRMATORY nor EXPLORATORY. "
         "Label it (report-result skill): confirmatory only if run under a committed pre-registration on unseen data."
     )
-elif results and s.audit_toml:
+elif results and s.osaudit_toml:
     findings = osaudit_findings(cwd)
     if findings:
         reason = f"osaudit reports findings on the new results (CONVENTIONS.md):\n{findings}"

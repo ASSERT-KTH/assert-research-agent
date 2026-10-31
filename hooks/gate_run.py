@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """PreToolUse(Bash): every run is either confirmatory or exploratory, and says so.
 
-Directories come from `study(cwd)`: environment, else audit.toml [study] (CONVENTIONS.md).
-An audit.toml without its schema URL (audit-v1) blocks every run until fixed.
+Directories come from `study(cwd)`: environment, else osaudit.toml [study] (CONVENTIONS.md).
+An osaudit.toml without its schema URL (audit-v1) blocks every run until fixed.
 
 A run is a command that executes a script: through an interpreter or runner
 (python, bash, uv run, osaudit run, sbatch, ...) or by its path. Reading code
@@ -12,7 +12,7 @@ A run is a command that executes a script: through an interpreter or runner
   experiments/). Each experiment it invokes (experiments/<name>) must be
   named by a pre-registration committed in the prereg directory, with no
   uncommitted edits and a valid TOML front matter (hypothesis, data, α, m, ...)
-  — i.e. fixed for *this* experiment before the data. When audit.toml exists,
+  — i.e. fixed for *this* experiment before the data. When osaudit.toml exists,
   the run must also go through `osaudit run --prereg <file>`, so the result
   records its mode and osaudit refuses a run on data already seen. If a custom
   run pattern names no experiment, any committed pre-registration is accepted.
@@ -82,9 +82,9 @@ def confirmatory_reason(cwd: str, s: Study, cmd: str, run: str) -> str | None:
         if not valid:
             problems = "; ".join(prereg_problems(git(cwd, "show", f"HEAD:./{preregs[0]}")))
             return f"{preregs[0]} is not a machine-readable pre-registration: {problems}. See the preregister skill (TOML front matter), commit, then run."
-        if s.audit_toml and not any(f"--prereg {p}" in cmd or f"--prereg={p}" in cmd for p in valid):
+        if s.osaudit_toml and not any(f"--prereg {p}" in cmd or f"--prereg={p}" in cmd for p in valid):
             return (
-                f"audit.toml exists: run it as `osaudit run --prereg {valid[0]} --input <data> -o {s.results}/<name>.json -- <command>`, "
+                f"osaudit.toml exists: run it as `osaudit run --prereg {valid[0]} --input <data> -o {s.results}/<name>.json -- <command>`, "
                 "so the result records its mode and pre-registration (CONVENTIONS.md, Runs and reports)."
             )
     return None

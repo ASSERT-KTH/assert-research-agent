@@ -41,7 +41,7 @@ is seen. Anything else is exploratory (use the `explore` skill).
    `experiments` and its front matter is valid. The commit date proves the
    bar came before the data.
 8. **Run through osaudit**, so the result records its mode and
-   registration (required by the gate when `audit.toml` exists):
+   registration (required by the gate when `osaudit.toml` exists):
 
    ```sh
    osaudit run --prereg prereg/<file>.md --input data/test -o results/<name>.json \

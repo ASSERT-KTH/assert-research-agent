@@ -43,7 +43,7 @@ carries neither label.
   measured the wrong component)`.
 - Link the pre-registration file and the commit that produced the number.
 - Every number comes from a results file written by `osaudit run`; copy it,
-  never retype it. When `audit.toml` exists, the stop hook runs `osaudit
+  never retype it. When `osaudit.toml` exists, the stop hook runs `osaudit
   results` and `osaudit study`, and a finding sends you back. In the paper, a
   number from exploratory results says "exploratory" in its paragraph
   (`numbers/exploratory-unlabelled`).

@@ -25,7 +25,7 @@ MODE_LABELS = ("CONFIRMATORY", "EXPLORATORY")
 
 @dataclass(frozen=True)
 class Study:
-    """Repo conventions (CONVENTIONS.md, Repository): environment, else audit.toml [study], else defaults."""
+    """Repo conventions (CONVENTIONS.md, Repository): environment, else osaudit.toml [study], else defaults."""
 
     prereg: str
     explore: str
@@ -36,24 +36,31 @@ class Study:
     # Group 1 names the experiment a run belongs to; its pre-registration must name it too.
     experiment_pattern: re.Pattern[str]
     explore_pattern: re.Pattern[str]
-    audit_toml: bool
-    # Why audit.toml is not usable (no or wrong schema URL), or None.
+    osaudit_toml: bool
+    # Why osaudit.toml is not usable (no or wrong schema URL), or None.
     audit_problem: str | None
+
+
+def config_file(top: Path) -> Path:
+    """`osaudit.toml`; the legacy `audit.toml` when only that one exists."""
+    legacy = top / "audit.toml"
+    return legacy if legacy.is_file() and not (top / "osaudit.toml").is_file() else top / "osaudit.toml"
 
 
 def study(cwd: str) -> Study:
     top = repo_root(cwd)
+    cfg = config_file(top)
     toml: dict = {}
     problem = None
     try:
-        data = tomllib.loads((top / "audit.toml").read_text(encoding="utf-8"))
+        data = tomllib.loads(cfg.read_text(encoding="utf-8"))
         toml = data.get("study", {})
         if data.get("schema") != AUDIT_SCHEMA:
-            problem = f'audit.toml must start with schema = "{AUDIT_SCHEMA}"'
+            problem = f'{cfg.name} must start with schema = "{AUDIT_SCHEMA}"'
     except OSError:
         pass
     except tomllib.TOMLDecodeError as e:
-        problem = f"audit.toml: {e}"
+        problem = f"{cfg.name}: {e}"
 
     def get(key: str, env: str, default: str) -> str:
         return os.environ.get(env) or str(toml.get(key) or default)
@@ -72,7 +79,7 @@ def study(cwd: str) -> Study:
             os.environ.get("RESEARCH_EXPERIMENT_PATTERN") or rf"""(?:^|[\s/])({re.escape(exp)}/[^\s/'";|&)]+)"""
         ),
         explore_pattern=re.compile(os.environ.get("RESEARCH_EXPLORE_PATTERN") or rf"(^|[\s/]){re.escape(explore)}/\S+"),
-        audit_toml=(top / "audit.toml").is_file(),
+        osaudit_toml=cfg.is_file(),
         audit_problem=problem,
     )
 

@@ -101,8 +101,8 @@ def test_confirmatory_denied_with_invalid_front_matter(repo: Path, text: str, pr
     assert denied(out) and problem in out["hookSpecificOutput"]["permissionDecisionReason"]
 
 
-def test_confirmatory_needs_osaudit_run_when_audit_toml(repo: Path) -> None:
-    (repo / "audit.toml").write_text(AUDIT_HEAD + '[paper]\ntex = ["p.tex"]\n')
+def test_confirmatory_needs_osaudit_run_when_osaudit_toml(repo: Path) -> None:
+    (repo / "osaudit.toml").write_text(AUDIT_HEAD + '[paper]\ntex = ["p.tex"]\n')
     prereg(repo, "a.md", valid("experiments/run.py"))
     out = gate(repo, "python experiments/run.py")
     assert denied(out) and "osaudit run --prereg prereg/a.md" in out["hookSpecificOutput"]["permissionDecisionReason"]
@@ -110,8 +110,16 @@ def test_confirmatory_needs_osaudit_run_when_audit_toml(repo: Path) -> None:
     assert gate(repo, cmd) == {}
 
 
-def test_study_dirs_from_audit_toml(repo: Path) -> None:
-    (repo / "audit.toml").write_text(AUDIT_HEAD + '[study]\nprereg = "registrations"\nexperiments = "exp"\n')
+def test_study_dirs_from_legacy_audit_toml(repo: Path) -> None:
+    from _common import study
+
+    (repo / "audit.toml").write_text(AUDIT_HEAD + '[study]\nprereg = "registrations"\n')
+    assert study(str(repo)).prereg == "registrations"
+    assert study(str(repo)).osaudit_toml
+
+
+def test_study_dirs_from_osaudit_toml(repo: Path) -> None:
+    (repo / "osaudit.toml").write_text(AUDIT_HEAD + '[study]\nprereg = "registrations"\nexperiments = "exp"\n')
     (repo / "registrations").mkdir()
     (repo / "registrations" / "a.md").write_text(valid("exp/run.py"))
     commit_all(repo, "prereg")
@@ -326,7 +334,7 @@ def stop_with(repo: Path, env: dict[str, str]) -> dict:
 
 
 def labelled_results(repo: Path) -> None:
-    (repo / "audit.toml").write_text(AUDIT_HEAD + '[paper]\ntex = ["p.tex"]\n')
+    (repo / "osaudit.toml").write_text(AUDIT_HEAD + '[paper]\ntex = ["p.tex"]\n')
     commit_all(repo, "audit")
     (repo / "results").mkdir()
     (repo / "results" / "r.json").write_text("{}")
@@ -345,7 +353,7 @@ def test_stop_silent_when_osaudit_clean(repo: Path, tmp_path_factory: pytest.Tem
     assert stop_with(repo, fake_osaudit(tmp_path_factory.mktemp("o"), 0, "")) == {}
 
 
-def test_stop_skips_osaudit_without_audit_toml(repo: Path, tmp_path_factory: pytest.TempPathFactory) -> None:
+def test_stop_skips_osaudit_without_osaudit_toml(repo: Path, tmp_path_factory: pytest.TempPathFactory) -> None:
     (repo / "results").mkdir()
     (repo / "results" / "r.json").write_text("{}")
     (repo / "REPORT.md").write_text("## a — EXPLORATORY\n")
@@ -365,15 +373,15 @@ def test_confirmatory_denied_without_schema(repo: Path) -> None:
     assert denied(out) and "schema must be" in out["hookSpecificOutput"]["permissionDecisionReason"]
 
 
-def test_runs_denied_when_audit_toml_has_no_schema(repo: Path) -> None:
-    (repo / "audit.toml").write_text('[paper]\ntex = ["p.tex"]\n')
+def test_runs_denied_when_osaudit_toml_has_no_schema(repo: Path) -> None:
+    (repo / "osaudit.toml").write_text('[paper]\ntex = ["p.tex"]\n')
     prereg(repo, "a.md", valid("experiments/run.py"))
     (repo / "explore").mkdir()
     (repo / "explore" / "log.md").write_text(LOG)
     for cmd in ("osaudit run --prereg prereg/a.md -o results/r.json -- python experiments/run.py",
                 "python explore/look.py"):
         out = gate(repo, cmd)
-        assert denied(out) and "audit.toml must start with schema" in out["hookSpecificOutput"]["permissionDecisionReason"]
+        assert denied(out) and "osaudit.toml must start with schema" in out["hookSpecificOutput"]["permissionDecisionReason"]
     assert gate(repo, "ls") == {}
 
 

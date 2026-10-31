@@ -69,7 +69,7 @@ def test_study_table_example_matches_hook_defaults(tmp_path: Path) -> None:
 
     block = re.search(r"```toml\n(schema = [^\n]*\n\n\[study\]\n.*?)```", CONVENTIONS, re.DOTALL)
     assert block, "CONVENTIONS.md must show the [study] table"
-    (tmp_path / "audit.toml").write_text(block.group(1))
+    (tmp_path / "osaudit.toml").write_text(block.group(1))
     s = study(str(tmp_path))
     assert (s.prereg, s.explore, s.experiments, s.results) == ("prereg", "explore", "experiments", "results")
     assert s.report == ["REPORT.md", "NOTES.md", "README.md"]

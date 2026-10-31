@@ -96,7 +96,7 @@ How the infrastructure supports both:
 
 [`CONVENTIONS.md`](CONVENTIONS.md) is the single specification of a
 research repository, from the first pre-registration to the paper: layout
-and `audit.toml [study]`, pre-registration and exploration-log formats, the
+and `osaudit.toml [study]`, pre-registration and exploration-log formats, the
 results `provenance` block, and the rules on numbers, quotes and references.
 Every structured data file carries a mandatory `schema` key, the URL of its
 JSON Schema in [`schemas/`](schemas/): whoever finds the file finds this repo.
@@ -119,7 +119,7 @@ Two tools enforce it at two moments:
   - `osaudit numbers` flags a paper number traced to exploratory results
     whose paragraph does not say so (`numbers/exploratory-unlabelled`).
 
-When the experimental repository has an `audit.toml`, the hooks require
+When the experimental repository has an `osaudit.toml`, the hooks require
 confirmatory runs to go through `osaudit run --prereg`, and the stop hook
 runs `osaudit results` and `osaudit study` (when installed) on new results.
 
@@ -143,7 +143,7 @@ Three layers, from always-on to on-demand to enforced:
   check the repo. Same JSON protocol on both harnesses. Silent unless
   something is wrong.
   - `inject_discipline.py` (`SessionStart`) — injects `system-prompt.md`
-  - `gate_run.py` (`PreToolUse` Bash) — a *run* is a command that executes a script (an interpreter or runner such as `python`, `bash`, `uv run`, `osaudit run`, `sbatch`, or the script by its path; reading code never is); denies a confirmatory run unless a committed pre-registration with valid front matter names that experiment (and, with `audit.toml`, unless it goes through `osaudit run --prereg`), an exploratory run without a fork log, and any shell command writing a committed pre-registration (redirection, `tee`, `sed -i`, `mv`/`cp`/`rm`, `git checkout`/`restore`…; best effort, an interpreter writing the file is not caught)
+  - `gate_run.py` (`PreToolUse` Bash) — a *run* is a command that executes a script (an interpreter or runner such as `python`, `bash`, `uv run`, `osaudit run`, `sbatch`, or the script by its path; reading code never is); denies a confirmatory run unless a committed pre-registration with valid front matter names that experiment (and, with `osaudit.toml`, unless it goes through `osaudit run --prereg`), an exploratory run without a fork log, and any shell command writing a committed pre-registration (redirection, `tee`, `sed -i`, `mv`/`cp`/`rm`, `git checkout`/`restore`…; best effort, an interpreter writing the file is not caught)
   - `guard_prereg.py` (`PreToolUse` Edit/Write on Claude, `apply_patch` on Codex) — asks (Claude) or denies (Codex) before a committed pre-registration changes
   - `check_report.py` (`Stop`) — sends the agent back once if `results/` changed but no report was written, the new entry is not labelled CONFIRMATORY/EXPLORATORY, or `osaudit results`/`study` report findings
 
@@ -155,7 +155,7 @@ result → hook.
 
 The hooks assume this layout in the experimental repository (normative
 version: [`CONVENTIONS.md`](CONVENTIONS.md)). Override the directories in
-`audit.toml [study]` (shared with osaudit) or with environment variables,
+`osaudit.toml [study]` (shared with osaudit) or with environment variables,
 which take precedence:
 
 - `experiments/` — confirmatory entry points (`[study] experiments`,
